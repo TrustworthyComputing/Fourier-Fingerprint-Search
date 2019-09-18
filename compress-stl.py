@@ -13,7 +13,7 @@ def parseArgs():
         stl_input = '3d-models/boat-ascii.stl'
     else:
         if not args.stl.endswith(".stl"):
-            print("STL stl should end with '.stl' extension.")
+            print("STL file should end with '.stl' extension.")
             exit(-1)
         if not os.path.isfile(args.stl):
             print("Input file '" + args.stl + "' does not exist.")
@@ -30,15 +30,14 @@ def compress(stl_input, stl_output):
         tokens = line.split()
         if len(tokens) >= 3:
             str = ' '.join(tokens[-3:])
-            # print(str)
-            ofp.write(str)
+            ofp.write(str+' ')
     ifp.close()
     ofp.close()
 
 
 if __name__== "__main__":
     stl_input, stl_output = parseArgs()
-    print(stl_input)
-    print(stl_output)
     compress(stl_input, stl_output)
+    print('Output saved to ' + stl_output)
+
     
