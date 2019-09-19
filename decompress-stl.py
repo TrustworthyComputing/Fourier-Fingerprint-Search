@@ -20,6 +20,8 @@ def parseArgs():
             exit(-2)
     if args.out is None:
         stl_output = stl_input[:-5] + '_1.stl'
+    else:
+        stl_output = args.out
     return stl_input, stl_output
 
 
