@@ -69,8 +69,26 @@ endsolid OpenSCAD_Model
 ```
 
 
+### Compressing and decompressing STL files
 
-##### [OpenSCAD](https://www.openscad.org/):
+To compress STL files by removing redundant strings and produce a compreesed STL (cstl) file:
+
+```
+python compress-stl.py --stl ./3d-models/boat-ascii.stl
+```
+
+To decompressing custom CSTL files to get back the original STL:
+```
+python decompress-stl.py --cstl ./3d-models/boat-ascii.cstl --out ./3d-models/boat-ascii-recovered.stl
+```
+
+Finally, to check the results:
+```
+diff ./3d-models/boat-ascii.stl ./3d-models/boat-ascii-recovered.stl
+```
+
+
+#### Visualize STL files with [OpenSCAD](https://www.openscad.org/):
 
 ```
 import("absolute-path-to-repo/cad-to-audio/3d-models/boat-ascii.stl");
