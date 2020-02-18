@@ -2,7 +2,9 @@ import os
 import sys
 import argparse
 import pyfftw
-import numpy
+import math
+import numpy as np
+from scipy import ndimage as ndi
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from operator import itemgetter, attrgetter
@@ -47,7 +49,7 @@ def plot(array):
     plt.show()
     
 def fft_3d(array):
-    return numpy.absolute(pyfftw.interfaces.numpy_fft.fftn(array))
+    return np.absolute(pyfftw.interfaces.numpy_fft.fftn(array))
 
 def stl_to_points_array(fileName):
     stl = open(fileName, "r")
@@ -64,7 +66,7 @@ def stl_to_points_array(fileName):
 
 # Points array tp numpy array
 def points_array_to_numpy_array(points):
-    c = numpy.empty([len(points), 3], dtype='f')
+    c = np.empty([len(points), 3], dtype='f')
     array = pyfftw.byte_align(c)
     i = 0
     for p in points:
@@ -84,23 +86,25 @@ def sort_by_axis(axis, points):
     else:
         print("No such axis.")
 
-
 def slice_and_fft(points, num_of_slices):
     points = sort_by_axis(Axis.X, points)
-    axis_range = points[-1].x - points[0].x
-    slice_range = axis_range // num_of_slices
+    min_val = points[0].x
+    axis_range = abs(points[-1].x - min_val)
+    # print('Min: ' + str(points[0].x))
+    # print('Max: ' + str(points[-1].x))
+    slice_range = axis_range / num_of_slices
     slices = [[] for i in range(num_of_slices+1)]
+    # print('axis_range: ' + str(axis_range))
+    # print('slice_range: ' + str(slice_range))
     for p in points:
-        slice_idx = int( (p.x  + abs(points[0].x)) // slice_range )
+        slice_idx = math.floor(p.x / slice_range) - math.floor(min_val / slice_range)
+        # print(p.x, ' -> ', slice_idx)
+        
         slices[slice_idx].append(p)
 
     fft_array = [[] for i in range(num_of_slices+1)]
     i = 0
     for axis_slice in slices:
-        # for p in axis_slice:
-        #     print(i, end=') ')
-        #     p.print_point()
-        #     break
         if len(axis_slice) == 0:
             continue
         fft_array[i].append(fft_3d(points_array_to_numpy_array(axis_slice)))
@@ -108,15 +112,17 @@ def slice_and_fft(points, num_of_slices):
 
     return fft_array
 
-
 # Driver function
 def main():
     stl_input, num_of_slices = parseArgs()
+    print('Number of slices: ' + str(num_of_slices))
 
     points = stl_to_points_array(stl_input)
 
     fft_array = slice_and_fft(points, num_of_slices)
-    print(fft_array)
+    
+    # print(fft_array)
+    
     return
 
 
