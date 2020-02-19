@@ -28,20 +28,27 @@
 ## Pseudocode:
 
 ```
-# Generate the fingerprint of a STL file
-def fingerprint(hash_table, stl_file):
+'''
+Generate the fingerprint of a STL file and store it in the hash table.
+    ht          : Hash table quickly retrieve (slice index and STL file name) from signatures  
+    stl_file    : STL input file name.
+    num_slices  : Number of slices to split the STL file to.
+    num_freqs   : Number of frequencies to split each slice to.
+    amp_min     : Minimum amplitude in spectrogram in order to be considered a peak.
+'''
+def fingerprint(ht, stl_file, num_slices, num_freqs, amp_min):
     shapes = parse_stl(stl_file)
     
     shapes_freq = fft(shapes)
 
     # Split STL to slices/chunks
-    slices = split_to_slices(shapes_freq)             # configurable (e.g., 10)
+    slices = split_to_slices(shapes_freq, num_slices)       # configurable (e.g., 10)
     
     for slice_idx in range(len(slices)):
         slice = slices[slice_idx]
          
         # Split each slice to frequency intervals
-        freqs = split_to_freq_intervals(slice)  # configurable (e.g., 4)
+        freqs = split_to_freq_intervals(slice, num_freqs)   # configurable (e.g., 4)
         
         # For each frequency interval find the peak
         peaks = []
@@ -52,7 +59,7 @@ def fingerprint(hash_table, stl_file):
         # Hash the peaks of this slice to get the signature
         signature = hash(peaks)
         
-        hash_table.put(signature, (slice_idx, stl_file))
+        ht.put(signature, (slice_idx, stl_file))
 ```
 
 
