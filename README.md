@@ -1,44 +1,32 @@
 # CAD to Audio [![License MIT][badge-license]](LICENSE)
 
-## Shapes to Sound
+## Signature Generation of Songs
 
+1. Use **FFT** to get frequencies and magnitudes.
+    * With FFT we lose information about timing.
+    * We see frequencies and their magnitudes, but we don't know when in the song they appeared.
+    
+1. We need to know at what point of time each frequency appeared.
+    * Introduce sliding window (Split the song in **chunks**).
 
-#### 1. Basic shapes to arrays
+1. For each chunk we need to find which frequencies are the most important.
+    * **Peaks**: Frequencies with the highest magnitude.
 
-##### Array Structure
+1. We have a wide range of frequencies.
+    * Use **frequency intervals** (e.g., freq-range/4).
+    
+1. Within each interval identify the frequency with the highest magnitude.
+    * This information forms a **signature** for this chunk of the song, and this signature becomes part of the fingerprint of the song as a whole.
+    * Fingerprint: union of signatures for each chunk of the song. 
 
-* cube(3)
-    | Index | Frequency	| Amplitude | Meaning        |
-    |:-----:|:---------:|:---------:|:--------------:|
-    |  0  	| 100  	    | cube_id   | Shape id       |
-    |  1    | 200  	    | 1      	| # of fields    |
-    |  2    | 300  	    | 3      	| field #1       |
-
-* cube(4)
-    | Index | Frequency	| Amplitude | Meaning        |
-    |:-----:|:---------:|:---------:|:--------------:|
-    |  3  	| 400  	    | cube_id   | Shape id       |
-    |  4    | 500  	    | 1      	| # of fields    |
-    |  5    | 600  	    | 4      	| field #1       |
-
-
-#### 2. Arrays to sound
-
-Make a sin wave for each (non-zero) element of the array. Play `k` of them for some agreed-upon interval of time (`t`). We can play multiple shapes at the same time (`k`). Then after `t` continue to the next `k` shapes. Both `t` and `k` are configurable.
-
-##### Example
-```
-7 total shapes.
-k = 5
-t = 10 sec.
-
-Play the first 5 sin waves that correspond to the 5 first shapes for 10 seconds. Continue with the remaining 2 for another 10 seconds. 
-```
+1. Use a **hash table** to make search fast.
+    * The signatures become the key to our hash table.
+    * Value is a tuple of the times this frequencies appeared in each song along with the SongID.
+    * Value is a tuple of (chunk_i, song_ID). chunk_i is the time this frequency appeared in the SongID song.
 
 
 
-
-### STereoLithography (STL) Files 
+## STereoLithography (STL) Files 
 
 The main purpose of the STL file format is to encode the surface geometry of a 3D object.
 
@@ -69,26 +57,8 @@ endsolid OpenSCAD_Model
 ```
 
 
-### Compressing and decompressing STL files
 
-To compress STL files by removing redundant strings and produce a compreesed STL (cstl) file:
-
-```
-python compress-stl.py --stl ./3d-models/boat-ascii.stl
-```
-
-To decompressing custom CSTL files to get back the original STL:
-```
-python decompress-stl.py --cstl ./3d-models/boat-ascii.cstl --out ./3d-models/boat-ascii-recovered.stl
-```
-
-Finally, to check the results:
-```
-diff ./3d-models/boat-ascii.stl ./3d-models/boat-ascii-recovered.stl
-```
-
-
-#### Visualize STL files with [OpenSCAD](https://www.openscad.org/):
+## Visualize STL files with [OpenSCAD](https://www.openscad.org/):
 
 ```
 import("absolute-path-to-repo/cad-to-audio/3d-models/boat-ascii.stl");
