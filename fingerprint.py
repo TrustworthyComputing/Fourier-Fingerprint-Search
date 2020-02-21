@@ -21,6 +21,11 @@ If True, will sort peaks temporally for fingerprinting; not sorting will cut dow
 '''
 PEAK_SORT = True
 
+'''
+The number of peaks to keep after filtering out.
+'''
+DEFAULT_NUM_OF_PEAKS = 10
+
 
 '''
 * Open fileName STL file
@@ -93,10 +98,12 @@ def detect_peaks(grid):
 
 '''
 Generate the fingerprint of a STL file and store it in the hash table.
-    stl_file        : STL input file name.
-    num_of_slices   : Number of slices to split the STL file to.
+    stl_file            : STL input file name.
+    num_of_slices       : Number of slices to split the STL file to
+    num_of_peaks_to_keep: Number of peaks to keep after filtering the rest out
+    fan_value           : Degree to which a fingerprint can be paired with its neighbors
 '''
-def fingerprint(stl_file, num_of_slices):
+def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEAKS, fan_value=DEFAULT_FAN_VALUE):
     # Parse STL and interpolate points
     points_array = stl_to_points_array(stl_file)
     
@@ -106,6 +113,7 @@ def fingerprint(stl_file, num_of_slices):
     # Sort by Z axis
     scaled_points_array = sort_by_axis(Axis.Z, scaled_points_array)
     
+    maxima_list = []
     # For each slice 
     points_per_slice = math.ceil(len(scaled_points_array)/num_of_slices)
     for i in range(num_of_slices):
@@ -124,15 +132,68 @@ def fingerprint(stl_file, num_of_slices):
         grid_fft = np.abs( pyfftw.interfaces.numpy_fft.fft2(grid) )
         
         # Find peaks
-        peaks = detect_peaks(grid_fft)
+        detected_peaks = detect_peaks(grid_fft)
+        magnitudes = grid_fft[detected_peaks]
+        j_arr, i_arr = np.where(detected_peaks)
         
+        # Find minimum magnitude with respect to the number of peaks to keep
+        min_magnitude = nth_largest(num_of_peaks_to_keep, magnitudes)
+        
+        # filter peaks
+        magnitudes = magnitudes.flatten()
+        peaks = zip(i_arr, j_arr, magnitudes)
+        peaks_filtered = filter(lambda x: x[2]>min_magnitude, peaks) # freq, time, mag
+        
+        # get indices for frequency x and frequency y
+        frequency_x_idx = []
+        frequency_y_idx = []
+        for x in peaks_filtered:
+            frequency_x_idx.append(x[1])
+            frequency_y_idx.append(x[0])
+        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
+        
+        maxima_list += local_maxima
+    
+    # Generate hashes    
+    return generate_hashes(maxima_list, fan_value)
 
+
+'''
+Generate Hashes
+'''
+def generate_hashes(peaks_list, fan_value=DEFAULT_FAN_VALUE):
+    for ml in peaks_list:
+        print(ml)
+    
+    # # For each list of peaks (slice)
+    # for i in range(len(peaks_list) - 1):
+    #     # Select Anchor (For each peak)
+    #     for j in range(len(peaks_list[i])):
+    #         # For the next fan_value peaks
+    #         for k in range(1, fan_value):
+    # 
+    #             # Check if we are at the last fan_value peaks
+    #             if (k) < len(peaks_list[i + 1]):
+    # 
+    #                 freq1 = peaks_list[j][IDX_FREQ_I]
+    #                 freq2 = peaks_list[j + k][IDX_FREQ_I]
+    #                 t1 = peaks_list[j][IDX_TIME_J]
+    #                 t2 = peaks_list[j + k][IDX_TIME_J]
+    #                 t_delta = t2 - t1
+        
+    # for i in range(len(peaks_list)):
+    #     for j in range(1, fan_value):
+    #         if (i + j) < len(peaks_list):
+    #             if t_delta >= MIN_HASH_TIME_DELTA and t_delta <= MAX_HASH_TIME_DELTA:
+    #                 h = hashlib.sha1("%s|%s|%s" % (str(freq1), str(freq2), str(t_delta)))
+    #                 yield (h.hexdigest()[0:FINGERPRINT_REDUCTION], t1)
+    
 '''
 Driver function
 '''
 def main():
     stl_file, num_of_slices = parseArgs()
-    fingerprint(stl_file, num_of_slices)
+    fingerprint(stl_file, num_of_slices, DEFAULT_NUM_OF_PEAKS, DEFAULT_FAN_VALUE)
     
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import os
 import argparse
+import heapq
 from enum import Enum
 
 class Axis(Enum):
@@ -68,6 +69,12 @@ def find_max_min_range(points_array, axis):
         min_z = min(p.z for p in points_array)
         range_z = max_z - min_z
         return max_z, min_z, range_z
+
+'''
+Return the nth largest of a list
+'''
+def nth_largest(n, lst):
+    return heapq.nlargest(n, lst)[-1]
 
 def quantizer(num, accuracy=0.02):
     factor = 1.0 / accuracy
