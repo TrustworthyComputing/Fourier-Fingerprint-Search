@@ -3,9 +3,6 @@ import pyfftw
 import math
 import numpy as np
 from helper import *
-from operator import itemgetter
-from scipy.ndimage.filters import maximum_filter
-from scipy.ndimage.morphology import (generate_binary_structure, iterate_structure, binary_erosion)
 
 '''
 The size of the grid that all shapes will scale to.
