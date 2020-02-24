@@ -22,7 +22,8 @@ Parse arguments and perform checks.
 '''
 def parseArgs():
     parser = argparse.ArgumentParser(description='STL compression')
-    parser.add_argument('--stl', help='path to STL file (.stl)', required=True)
+    parser.add_argument('--stl', help='Path to STL file (.stl)', required=True)
+    parser.add_argument('--mode', type=str.lower, choices=['learn', 'search'], help='Learn (l) or Search (s) mode', required=True)
     parser.add_argument('--slices', help='Number of slices', required=False)
     args = parser.parse_args()
     stl_input = args.stl
@@ -35,7 +36,7 @@ def parseArgs():
     slices = 10
     if args.slices is not None:
         slices = args.slices
-    return stl_input, int(slices)
+    return stl_input, args.mode, int(slices)
 
 '''
 Sort the list for the given axis

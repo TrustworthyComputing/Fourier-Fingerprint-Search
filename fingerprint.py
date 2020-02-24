@@ -106,7 +106,7 @@ Generate the fingerprint of a STL file and store it in the hash table.
     num_of_peaks_to_keep: Number of peaks to keep after filtering the rest out
     fan_value           : Degree to which a fingerprint can be paired with its neighbors
 '''
-def fingerprint(stl_file, db, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEAKS, fan_value=DEFAULT_FAN_VALUE):
+def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEAKS, fan_value=DEFAULT_FAN_VALUE):
     # Parse STL and interpolate points
     points_array = stl_to_points_array(stl_file)
 
@@ -158,26 +158,27 @@ def fingerprint(stl_file, db, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF
         maxima_list += local_maxima
 
     # Generate hashes
-    return generate_hashes(maxima_list, db, fan_value)
+    return generate_hashes(maxima_list, fan_value)
 
 
 '''
-Generate Hashes
+Generate Hashes: returns a list of sha1 digests and anchor slice numbers
 '''
-def generate_hashes(peaks_list, db, fan_value=DEFAULT_FAN_VALUE, ):
+def generate_hashes(peaks_list, fan_value=DEFAULT_FAN_VALUE):
+    signatures = []
+    # Use each point as an anchor
     for i in range(len(peaks_list) - fan_value):
         anchor = peaks_list[i]
+        # For the next fan_value points
         for j in range(i + 1, min(i + 1 + fan_value, len(peaks_list))):
+            # Generate signatue
             target = peaks_list[j]
-            # TODO: use absolute distance?
             dist_wrt_z = target[2] - anchor[2]
-            hash_input = str(anchor[0]) + str(anchor[1]) + str(
-                target[0]) + str(target[1]) + str(dist_wrt_z)
+            hash_input = str(anchor[0]) + str(anchor[1]) + str(target[0]) + str(target[1]) + str(dist_wrt_z)
             sha = hashlib.sha1()
             sha.update(hash_input.encode())
-            # add to database
+            # append signature to the fingerprint of the file
             key = sha.digest()
-            slice_num = str(anchor[2]).encode()
-            db.put(key, slice_num)
-            
-            # print(db.get(key))
+            slice_num = anchor[2]
+            signatures.append( (key, slice_num) )
+    return signatures
