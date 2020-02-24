@@ -1,17 +1,18 @@
 import plyvel
-import json
 from fingerprint import *
 from helper import *
 
-#metadata = {'stl_id': 5, 'offset': 10}
-
 def main():
+    # parse arguments
     stl_file, num_of_slices = parseArgs()
+    
+    # create database
     db = plyvel.DB('./avocado_db', create_if_missing=True)
-    # key = b"c22b5f9178342609428d6f51b2c5af4c0bde6a42"
-    # db.put(key, bytes(json.dumps(metadata).encode()))
-    # metadict = json.loads(db.get(key))
+    
+    # generate fingerprint of the file
     fingerprint(stl_file, db, num_of_slices, DEFAULT_NUM_OF_PEAKS,DEFAULT_FAN_VALUE)
+    
+    # close the database
     db.close()
 
 
