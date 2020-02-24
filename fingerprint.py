@@ -2,6 +2,7 @@ import sys
 import pyfftw
 import math
 import numpy as np
+import hashlib
 from helper import *
 from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
@@ -162,8 +163,18 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEA
 Generate Hashes
 '''
 def generate_hashes(peaks_list, fan_value=DEFAULT_FAN_VALUE):
-    for ml in peaks_list:
-        print(ml)
+    for i in range(len(peaks_list) - fan_value):
+        anchor = peaks_list[i]
+        for j in range(i + 1, min(i + 1 + fan_value, len(peaks_list))):
+            target = peaks_list[j]
+            # TODO: use absolute distance?
+            dist_wrt_z = target[2] - anchor[2] 
+            hash_input = str(anchor[0]) + str(anchor[1]) + str(target[0]) + str(target[1]) + str(dist_wrt_z)
+            sha = hashlib.sha1()
+            sha.update(hash_input.encode())
+            print(sha.hexdigest())
+            # TODO: add to database
+
     
     # # For each list of peaks (slice)
     # for i in range(len(peaks_list) - 1):
