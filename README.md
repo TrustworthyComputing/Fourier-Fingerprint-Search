@@ -2,27 +2,27 @@
 
 ## Signature Generation of STL files
 
-1. Use **FFT** to get frequencies and magnitudes.
-    * With FFT we lose information about timing.
-    * We see frequencies and their magnitudes, but we don't know when in the song they appeared.
+1. Map vertices of STL triangles on a 3D plane. 
+    * Scale objects to fit in a grid of a predefined size.
     
-1. We need to know at what point of time each frequency appeared.
-    * Introduce sliding window (Split the song in **chunks**).
+1. Use **FFT** to get frequencies and magnitudes.
+    * We see frequencies and their magnitudes, but we don't know where in the design.
+    
+1. We need to know in which part of the design each frequency appeared.
+    * Introduce sliding window (Split the design in **chunks**) w.r.t. X, Y, and Z axes.
+    * Resulting slices can be used to perform **2D-FFT** (lower complexity but requires quantization), or **3D-FFT** (higher complexity and storage requirements but more accurate characterization of design). 
 
 1. For each chunk we need to find which frequencies are the most important.
     * **Peaks**: Frequencies with the highest magnitude.
-
-1. We have a wide range of frequencies.
-    * Use **frequency intervals** (e.g., freq-range/4).
+    * Number of retrieved peaks determined by adjustable threshold.
     
-1. Within each interval identify the frequency with the highest magnitude.
-    * This information forms a **signature** for this chunk of the song, and this signature becomes part of the fingerprint of the song as a whole.
-    * Fingerprint: union of signatures for each chunk of the song. 
+1. Within each chunk identify the frequencies with the highest magnitude.
+    * This information forms a **signature** for this chunk of the design, and this signature becomes part of the fingerprint of the design as a whole.
+    * Fingerprint: union of signatures for each chunk of the design. 
 
 1. Use a **hash table** to make search fast.
     * The signatures become the key to our hash table.
-    * Value is a tuple of the times this frequencies appeared in each song along with the SongID.
-    * Value is a tuple of (chunk_i, song_ID). chunk_i is the time this frequency appeared in the SongID song.
+    * Value is a tuple of (chunk_i, STL_ID). chunk_i identifies the chunk this frequency appeared in the STL_ID design.
 
 
 ## Installation
