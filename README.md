@@ -1,6 +1,6 @@
 # CAD to Audio [![License MIT][badge-license]](LICENSE)
 
-## Signature Generation of Songs
+## Signature Generation of STL files
 
 1. Use **FFT** to get frequencies and magnitudes.
     * With FFT we lose information about timing.
@@ -24,6 +24,11 @@
     * Value is a tuple of the times this frequencies appeared in each song along with the SongID.
     * Value is a tuple of (chunk_i, song_ID). chunk_i is the time this frequency appeared in the SongID song.
 
+
+## Installation
+```
+pip install -r requirements.txt
+```
 
 
 ## STereoLithography (STL) Files 
