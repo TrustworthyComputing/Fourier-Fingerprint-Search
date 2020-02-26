@@ -99,6 +99,51 @@ def detect_peaks(grid):
     return detected_peaks
 
 
+def sort_and_slice(axis, scaled_points_array, num_of_slices, num_of_peaks_to_keep):
+
+    # Sort by axis
+    scaled_points_array = sort_by_axis(axis, scaled_points_array)
+
+    # For each slice
+    points_per_slice = math.ceil(len(scaled_points_array) / num_of_slices)
+    for i in range(num_of_slices):
+
+        # Put points on the grid
+        grid = np.zeros((GRID_SIZE, GRID_SIZE))
+        for j in range(points_per_slice):
+
+            idx = (i * points_per_slice) + j
+            if (idx >= len(scaled_points_array)):
+                break
+            p = scaled_points_array[idx]
+            grid[p.x][p.y] = 1
+
+        # FTT
+        grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
+
+        # Find peaks
+        detected_peaks = detect_peaks(grid_fft)
+        magnitudes = grid_fft[detected_peaks]
+        j_arr, i_arr = np.where(detected_peaks)
+
+        # Find minimum magnitude with respect to the number of peaks to keep
+        min_magnitude = nth_largest(num_of_peaks_to_keep, magnitudes)
+
+        # filter peaks
+        magnitudes = magnitudes.flatten()
+        peaks = zip(i_arr, j_arr, magnitudes)
+        peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
+
+        # get indices for frequency x and frequency y
+        frequency_x_idx = []
+        frequency_y_idx = []
+        for x in peaks_filtered:
+            frequency_x_idx.append(x[1])
+            frequency_y_idx.append(x[0])
+        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
+
+        return local_maxima
+
 '''
 Generate the fingerprint of a STL file and store it in the hash table.
     stl_file            : STL input file name.
@@ -114,135 +159,12 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEA
     # Scale points
     scaled_points_array = scale_points(points_array, GRID_SIZE)
 
-    # Sort by Z axis
-    scaled_points_array = sort_by_axis(Axis.Z, scaled_points_array)
+    maxima_list += sort_and_slice(Axis.X, scaled_points_array, num_of_slices, num_of_peaks_to_keep)
 
-    # For each slice
-    points_per_slice = math.ceil(len(scaled_points_array) / num_of_slices)
-    for i in range(num_of_slices):
+    maxima_list += sort_and_slice(Axis.Y, scaled_points_array, num_of_slices, num_of_peaks_to_keep)
 
-        # Put points on the grid
-        grid = np.zeros((GRID_SIZE, GRID_SIZE))
-        for j in range(points_per_slice):
+    maxima_list += sort_and_slice(Axis.Z, scaled_points_array, num_of_slices, num_of_peaks_to_keep)
 
-            idx = (i * points_per_slice) + j
-            if (idx >= len(scaled_points_array)):
-                break
-            p = scaled_points_array[idx]
-            grid[p.x][p.y] = 1
-
-        # FTT
-        grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
-
-        # Find peaks
-        detected_peaks = detect_peaks(grid_fft)
-        magnitudes = grid_fft[detected_peaks]
-        j_arr, i_arr = np.where(detected_peaks)
-
-        # Find minimum magnitude with respect to the number of peaks to keep
-        min_magnitude = nth_largest(num_of_peaks_to_keep, magnitudes)
-
-        # filter peaks
-        magnitudes = magnitudes.flatten()
-        peaks = zip(i_arr, j_arr, magnitudes)
-        peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
-
-        # get indices for frequency x and frequency y
-        frequency_x_idx = []
-        frequency_y_idx = []
-        for x in peaks_filtered:
-            frequency_x_idx.append(x[1])
-            frequency_y_idx.append(x[0])
-        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
-
-        maxima_list += local_maxima
-
-    # Sort by Y axis
-    scaled_points_array = sort_by_axis(Axis.Y, scaled_points_array)
-
-    # For each slice
-    points_per_slice = math.ceil(len(scaled_points_array) / num_of_slices)
-    for i in range(num_of_slices):
-
-        # Put points on the grid
-        grid = np.zeros((GRID_SIZE, GRID_SIZE))
-        for j in range(points_per_slice):
-
-            idx = (i * points_per_slice) + j
-            if (idx >= len(scaled_points_array)):
-                break
-            p = scaled_points_array[idx]
-            grid[p.x][p.y] = 1
-
-        # FTT
-        grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
-
-        # Find peaks
-        detected_peaks = detect_peaks(grid_fft)
-        magnitudes = grid_fft[detected_peaks]
-        j_arr, i_arr = np.where(detected_peaks)
-
-        # Find minimum magnitude with respect to the number of peaks to keep
-        min_magnitude = nth_largest(num_of_peaks_to_keep, magnitudes)
-
-        # filter peaks
-        magnitudes = magnitudes.flatten()
-        peaks = zip(i_arr, j_arr, magnitudes)
-        peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
-
-        # get indices for frequency x and frequency y
-        frequency_x_idx = []
-        frequency_y_idx = []
-        for x in peaks_filtered:
-            frequency_x_idx.append(x[1])
-            frequency_y_idx.append(x[0])
-        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
-
-        maxima_list += local_maxima
-
-    # Sort by X axis
-    scaled_points_array = sort_by_axis(Axis.X, scaled_points_array)
-
-    # For each slice
-    points_per_slice = math.ceil(len(scaled_points_array) / num_of_slices)
-    for i in range(num_of_slices):
-
-        # Put points on the grid
-        grid = np.zeros((GRID_SIZE, GRID_SIZE))
-        for j in range(points_per_slice):
-
-            idx = (i * points_per_slice) + j
-            if (idx >= len(scaled_points_array)):
-                break
-            p = scaled_points_array[idx]
-            grid[p.x][p.y] = 1
-
-        # FTT
-        grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
-
-        # Find peaks
-        detected_peaks = detect_peaks(grid_fft)
-        magnitudes = grid_fft[detected_peaks]
-        j_arr, i_arr = np.where(detected_peaks)
-
-        # Find minimum magnitude with respect to the number of peaks to keep
-        min_magnitude = nth_largest(num_of_peaks_to_keep, magnitudes)
-
-        # filter peaks
-        magnitudes = magnitudes.flatten()
-        peaks = zip(i_arr, j_arr, magnitudes)
-        peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
-
-        # get indices for frequency x and frequency y
-        frequency_x_idx = []
-        frequency_y_idx = []
-        for x in peaks_filtered:
-            frequency_x_idx.append(x[1])
-            frequency_y_idx.append(x[0])
-        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
-
-        maxima_list += local_maxima
-        
     # Generate hashes
     return generate_hashes(maxima_list, fan_value)
 
