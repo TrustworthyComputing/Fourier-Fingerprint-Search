@@ -2,6 +2,7 @@ import sys
 import pyfftw
 import math
 import numpy as np
+import copy
 import hashlib
 from helper import *
 from scipy.ndimage.filters import maximum_filter
@@ -99,10 +100,10 @@ def detect_peaks(grid):
     return detected_peaks
 
 
-def sort_and_slice(axis, scaled_points_array, num_of_slices, num_of_peaks_to_keep):
+def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, maxima_list):
 
-    # Sort by axis
-    scaled_points_array = sort_by_axis(axis, scaled_points_array)
+    # Sort by Z axis
+    scaled_points_array = sort_by_axis(axis, copy.deepcopy(points_array))
 
     # For each slice
     points_per_slice = math.ceil(len(scaled_points_array) / num_of_slices)
@@ -142,8 +143,7 @@ def sort_and_slice(axis, scaled_points_array, num_of_slices, num_of_peaks_to_kee
             frequency_y_idx.append(x[0])
         local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
 
-        return local_maxima
-
+        maxima_list += local_maxima
 '''
 Generate the fingerprint of a STL file and store it in the hash table.
     stl_file            : STL input file name.
@@ -159,11 +159,12 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEA
     # Scale points
     scaled_points_array = scale_points(points_array, GRID_SIZE)
 
-    maxima_list += sort_and_slice(Axis.X, scaled_points_array, num_of_slices, num_of_peaks_to_keep)
 
-    maxima_list += sort_and_slice(Axis.Y, scaled_points_array, num_of_slices, num_of_peaks_to_keep)
+    slice_and_fft(Axis.X, scaled_points_array, num_of_peaks_to_keep, num_of_slices, maxima_list)
+    slice_and_fft(Axis.Y, scaled_points_array, num_of_peaks_to_keep, num_of_slices, maxima_list)
+    slice_and_fft(Axis.Z, scaled_points_array, num_of_peaks_to_keep, num_of_slices, maxima_list)
 
-    maxima_list += sort_and_slice(Axis.Z, scaled_points_array, num_of_slices, num_of_peaks_to_keep)
+    print(len(maxima_list))
 
     # Generate hashes
     return generate_hashes(maxima_list, fan_value)
@@ -189,4 +190,5 @@ def generate_hashes(peaks_list, fan_value=DEFAULT_FAN_VALUE):
             key = sha.digest()
             slice_num = anchor[2]
             signatures.append( (key, slice_num) )
+    print(len(signatures))
     return signatures
