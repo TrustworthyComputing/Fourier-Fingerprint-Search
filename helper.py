@@ -2,6 +2,7 @@ import os
 import argparse
 import heapq
 from enum import Enum
+from colorama import Fore, Style
 
 class Axis(Enum):
     X = 1
@@ -17,6 +18,12 @@ class Point:
     def print_point(self):
         print(str(self.x) + ' \t ' + str(self.y) + ' \t ' + str(self.z))
 
+DEBUG = False
+
+def log(s):
+    if DEBUG:
+        print(Fore.YELLOW + str(s) + Style.RESET_ALL)
+
 '''
 Parse arguments and perform checks.
 '''
@@ -25,6 +32,7 @@ def parseArgs():
     parser.add_argument('--stl', help='Path to STL file (.stl)', required=True)
     parser.add_argument('--mode', type=str.lower, choices=['learn', 'search'], help='Learn (l) or Search (s) mode', required=True)
     parser.add_argument('--slices', help='Number of slices', required=False)
+    parser.add_argument('--debug', help='Enable debug mode', action='store_true', required=False)
     args = parser.parse_args()
     stl_input = args.stl
     if not args.stl.endswith(".stl"):
@@ -34,6 +42,8 @@ def parseArgs():
         print("Input file '" + args.stl + "' does not exist.")
         exit(-2)
     slices = 10
+    global DEBUG
+    DEBUG = args.debug
     if args.slices is not None:
         slices = args.slices
     return stl_input, args.mode, int(slices)

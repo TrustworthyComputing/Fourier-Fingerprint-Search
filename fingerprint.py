@@ -8,6 +8,9 @@ from helper import *
 from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 
+import logging, sys
+
+
 '''
 The size of the grid that all shapes will scale to.
 '''
@@ -164,7 +167,7 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEA
     slice_and_fft(Axis.Y, scaled_points_array, num_of_peaks_to_keep, num_of_slices, maxima_list)
     slice_and_fft(Axis.Z, scaled_points_array, num_of_peaks_to_keep, num_of_slices, maxima_list)
 
-    print(len(maxima_list))
+    log('len(maxima_list): ' + str(len(maxima_list)))
 
     # Generate hashes
     return generate_hashes(maxima_list, fan_value)
@@ -190,5 +193,7 @@ def generate_hashes(peaks_list, fan_value=DEFAULT_FAN_VALUE):
             key = sha.digest()
             slice_num = anchor[2]
             signatures.append( (key, slice_num) )
-    print(len(signatures))
+
+    log('len(signatures): ' + str(len(signatures)))
+    
     return signatures
