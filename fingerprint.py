@@ -103,9 +103,10 @@ def detect_peaks(grid):
     return detected_peaks
 
 
-def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, maxima_list):
-
-    # Sort by Z axis
+def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices):
+    maxima_list = []
+    
+    # Sort by axis
     scaled_points_array = sort_by_axis(axis, copy.deepcopy(points_array))
 
     # For each slice
@@ -147,6 +148,8 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, maxim
         local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
 
         maxima_list += local_maxima
+    return maxima_list
+
 '''
 Generate the fingerprint of a STL file and store it in the hash table.
     stl_file            : STL input file name.
@@ -157,20 +160,27 @@ Generate the fingerprint of a STL file and store it in the hash table.
 def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEAKS, fan_value=DEFAULT_FAN_VALUE):
     # Parse STL and interpolate points
     points_array = stl_to_points_array(stl_file)
-    maxima_list = []
 
     # Scale points
     scaled_points_array = scale_points(points_array, GRID_SIZE)
 
+    maxima_list_X = slice_and_fft(Axis.X, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
+    maxima_list_Y = slice_and_fft(Axis.Y, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
+    maxima_list_Z = slice_and_fft(Axis.Z, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
 
-    slice_and_fft(Axis.X, scaled_points_array, num_of_peaks_to_keep, num_of_slices, maxima_list)
-    slice_and_fft(Axis.Y, scaled_points_array, num_of_peaks_to_keep, num_of_slices, maxima_list)
-    slice_and_fft(Axis.Z, scaled_points_array, num_of_peaks_to_keep, num_of_slices, maxima_list)
+    log('len(maxima_list_X): ' + str(len(maxima_list_X)))
+    log('len(maxima_list_Y): ' + str(len(maxima_list_Y)))
+    log('len(maxima_list_Z): ' + str(len(maxima_list_Z)))
+    
+    signatures = []
+    signatures += generate_hashes(maxima_list_X, fan_value)
+    signatures += generate_hashes(maxima_list_Y, fan_value)
+    signatures += generate_hashes(maxima_list_Z, fan_value)
 
-    log('len(maxima_list): ' + str(len(maxima_list)))
-
+    log('len(signatures): ' + str(len(signatures)))
+    
     # Generate hashes
-    return generate_hashes(maxima_list, fan_value)
+    return signatures
 
 
 '''
@@ -193,7 +203,5 @@ def generate_hashes(peaks_list, fan_value=DEFAULT_FAN_VALUE):
             key = sha.digest()
             slice_num = anchor[2]
             signatures.append( (key, slice_num) )
-
-    log('len(signatures): ' + str(len(signatures)))
-    
     return signatures
+
