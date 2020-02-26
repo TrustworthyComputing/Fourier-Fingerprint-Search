@@ -36,7 +36,10 @@ def searchSignaturesInDB(db, signatures):
 
 def main():
     # parse arguments
-    stl_file, mode, num_of_slices = parseArgs()
+    stl_file, mode, num_of_slices, destroyDB = parseArgs()
+    
+    if destroyDB:
+        plyvel.destroy_db('./avocado_db')
     
     # open (or create) database
     db = plyvel.DB('./avocado_db', create_if_missing=True)

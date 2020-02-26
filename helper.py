@@ -32,6 +32,7 @@ def parseArgs():
     parser.add_argument('--stl', help='Path to STL file (.stl)', required=True)
     parser.add_argument('--mode', type=str.lower, choices=['learn', 'search'], help='Learn (l) or Search (s) mode', required=True)
     parser.add_argument('--slices', help='Number of slices', required=False)
+    parser.add_argument('--destroyDB', help='Destroy the database', action='store_true', required=False)
     parser.add_argument('--debug', help='Enable debug mode', action='store_true', required=False)
     args = parser.parse_args()
     stl_input = args.stl
@@ -46,7 +47,7 @@ def parseArgs():
     DEBUG = args.debug
     if args.slices is not None:
         slices = args.slices
-    return stl_input, args.mode, int(slices)
+    return stl_input, args.mode, int(slices), args.destroyDB
 
 '''
 Sort the list for the given axis
