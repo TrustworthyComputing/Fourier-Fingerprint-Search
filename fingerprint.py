@@ -5,31 +5,9 @@ import numpy as np
 import copy
 import hashlib
 from helper import *
+from parameters import *
 from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
-
-import logging, sys
-
-
-'''
-The size of the grid that all shapes will scale to.
-'''
-GRID_SIZE = 1000
-
-'''
-Degree to which a fingerprint can be paired with its neighbors -- higher will cause more fingerprints, but potentially better accuracy.
-'''
-DEFAULT_FAN_VALUE = 10
-
-'''
-If True, will sort peaks temporally for fingerprinting; not sorting will cut down number of fingerprints, but potentially affect performance.
-'''
-PEAK_SORT = True
-
-'''
-The number of peaks to keep after filtering out.
-'''
-DEFAULT_NUM_OF_PEAKS = 10
 
 
 '''

@@ -1,6 +1,7 @@
 import plyvel
 from fingerprint import *
 from helper import *
+from parameters import *
 
 
 def addSignaturesToDB(db, signatures, filename):
@@ -40,26 +41,43 @@ def searchSignaturesInDB(db, signatures):
     similarity = 0
     i = 0
     for sig in signatures:
-        val = db.get(sig[0])
+        hash = sig[0]
+        val = db.get(hash)
         if val is None:
             continue
+
         # Get the list of [ slice_no_1, filename_1, slice_no_2, filename_2, ... ]
         val = val.decode("utf-8").split()
         for slice_no, filename in zip(val[::2], val[1::2]):
-            
-            # Check if this is a collision from another slice
-            # if str(slice_no) == str(sig[1]):
-                # Count occurences
-            if filename in matched_files:
-                matched_files[filename] += 1
+
+            # If this is the first hash for that filename create a new inner dict
+            if filename not in matched_files:
+                matched_files[filename] = {}
+                matched_files[filename]['total'] = 1
+
+            # Count occurences
+            if hash not in matched_files[filename]:
+                matched_files[filename][hash] = 1
             else:
-                matched_files[filename] = 1
-    # Bring first the ones that matched the most
-    sorted(matched_files.items(), key=lambda x: x[1], reverse=True)
-    # return percentages
-    # for k, v in matched_files.items():
-        # matched_files[k] /= len(signatures)
-    return matched_files
+                matched_files[filename][hash] += 1
+            matched_files[filename]['total'] += 1
+
+    # Bring first the files that have the most unique matches
+    unique_matches_sorted = sorted(matched_files.items(), key=lambda x: len(x[1]), reverse=True)
+    with_collisions_matches_sorted = sorted(matched_files.items(), key=lambda x: x[1]['total'], reverse=True)
+    '''
+    unique_matches_sorted = [
+        ('file_a', {'h1': 5, 'h4': 5, 'h3': 5, 'h2': 5, 'h6': 5}),
+        ('file_b', {'h8': 5})
+    ]
+    '''
+    unique_matches = {}
+    collision_matches = {}
+    for i in range(min(NUMBER_OF_MATCHES, len(unique_matches_sorted))):
+        unique_matches[unique_matches_sorted[i][0]] = (len(unique_matches_sorted[i][1]) - 1) / len(signatures)
+        collision_matches[with_collisions_matches_sorted[i][0]] = with_collisions_matches_sorted[i][1]['total'] / len(signatures)
+        
+    return unique_matches, collision_matches
 
 
 
@@ -89,8 +107,11 @@ def main():
     else: # mode == 'search':
         print('Searching in the database for STL files that are similar to ' + stl_file + '\n')
         
-        matched_files = searchSignaturesInDB(db, signatures)
-        print(matched_files)
+        unique_matches, collision_matches = searchSignaturesInDB(db, signatures)
+        print('Files matched: ', end = '')
+        print(unique_matches)
+        print('Files matched with collisions: ', end = '')
+        print(collision_matches)
     
     # close the database
     db.close()
