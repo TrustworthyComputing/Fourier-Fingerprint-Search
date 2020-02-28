@@ -5,8 +5,34 @@ from helper import *
 
 def addSignaturesToDB(db, signatures, filename):
     for sig in signatures:
-        val = str(sig[1]) + ' ' + filename
-        db.put(sig[0], val.encode())
+        hash = sig[0]
+        slice_no = str(sig[1])
+        new_value = slice_no + ' ' + filename
+    
+        # Check if the hash exist and append them
+        prev_values = db.get(hash)
+        
+        # If this is the first occurence of this hash
+        if prev_values is None:
+            db.put(hash, new_value.encode())
+            log(new_value)
+        
+        # If we have seen this hash previously, check if it's from a different file
+        else:
+            # Get the list of [ slice_no_1, filename_1, slice_no_2, filename_2, ... ]
+            prev_values = prev_values.decode("utf-8").split()
+            already_exists = False
+            for prev_slice, prev_fname in zip(prev_values[::2], prev_values[1::2]):
+                if prev_fname == filename and prev_slice == slice_no:
+                    already_exists = True
+                    break
+            if already_exists:
+                continue # to the next signature
+            prev_values.append(slice_no)
+            prev_values.append(filename)
+            str_value = ' '.join([str(el) for el in prev_values])
+            log(str_value)
+            db.put(sig[0], str_value.encode())
 
 
 def searchSignaturesInDB(db, signatures):
@@ -17,19 +43,22 @@ def searchSignaturesInDB(db, signatures):
         val = db.get(sig[0])
         if val is None:
             continue
+        # Get the list of [ slice_no_1, filename_1, slice_no_2, filename_2, ... ]
         val = val.decode("utf-8").split()
-        slice_no = val[0]
-        filename = val[1]
-        # Count occurences
-        if filename in matched_files:
-            matched_files[filename] += 1
-        else:
-            matched_files[filename] = 1
+        for slice_no, filename in zip(val[::2], val[1::2]):
+            
+            # Check if this is a collision from another slice
+            # if str(slice_no) == str(sig[1]):
+                # Count occurences
+            if filename in matched_files:
+                matched_files[filename] += 1
+            else:
+                matched_files[filename] = 1
     # Bring first the ones that matched the most
     sorted(matched_files.items(), key=lambda x: x[1], reverse=True)
     # return percentages
-    for k, v in matched_files.items():
-        matched_files[k] /= len(signatures)
+    # for k, v in matched_files.items():
+        # matched_files[k] /= len(signatures)
     return matched_files
 
 

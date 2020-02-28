@@ -19,7 +19,7 @@ GRID_SIZE = 1000
 '''
 Degree to which a fingerprint can be paired with its neighbors -- higher will cause more fingerprints, but potentially better accuracy.
 '''
-DEFAULT_FAN_VALUE = 15
+DEFAULT_FAN_VALUE = 10
 
 '''
 If True, will sort peaks temporally for fingerprinting; not sorting will cut down number of fingerprints, but potentially affect performance.
