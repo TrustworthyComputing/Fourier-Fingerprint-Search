@@ -36,33 +36,33 @@ def searchSignaturesInDB(db, signatures):
 
 def main():
     # parse arguments
-    stl_file, mode, num_of_slices, destroyDB = parseArgs()
-    
+    stl_file, mode, num_of_slices, fft_dim, destroyDB = parseArgs()
+
     if destroyDB:
         plyvel.destroy_db('./avocado_db')
-    
+
     # open (or create) database
     db = plyvel.DB('./avocado_db', create_if_missing=True)
-    
+
     # generate fingerprint of the file
     print('Generating fingerprint of ' + stl_file + '\n')
-    signatures = fingerprint(stl_file, num_of_slices, DEFAULT_NUM_OF_PEAKS, DEFAULT_FAN_VALUE)
-    
+    signatures = fingerprint(stl_file, num_of_slices, fft_dim, DEFAULT_NUM_OF_PEAKS, DEFAULT_FAN_VALUE)
+
     # Add fingerprint to database
     if mode == 'learn':
         print('Updating database with ' + stl_file + '\n')
-        
+
         addSignaturesToDB(db, signatures, stl_file)
-    
+
         print('Done')
 
     # Search in database for potential matches
     else: # mode == 'search':
         print('Searching in the database for STL files that are similar to ' + stl_file + '\n')
-        
+
         matched_files = searchSignaturesInDB(db, signatures)
         print(matched_files)
-    
+
     # close the database
     db.close()
 

@@ -8,7 +8,7 @@ class Axis(Enum):
     X = 1
     Y = 2
     Z = 3
-    
+
 class Point:
     def __init__(self, token):
         self.x = float(token[1])
@@ -34,6 +34,7 @@ def parseArgs():
     parser.add_argument('--slices', help='Number of slices', required=False)
     parser.add_argument('--destroyDB', help='Destroy the database', action='store_true', required=False)
     parser.add_argument('--debug', help='Enable debug mode', action='store_true', required=False)
+    parser.add_argument('--fft_dim', help='3 or 2 dimensional FFT', choices = ['2', '3'], required=False)
     args = parser.parse_args()
     stl_input = args.stl
     if not args.stl.endswith(".stl"):
@@ -43,11 +44,14 @@ def parseArgs():
         print("Input file '" + args.stl + "' does not exist.")
         exit(-2)
     slices = 10
+    fft_dim = 2
     global DEBUG
     DEBUG = args.debug
     if args.slices is not None:
         slices = args.slices
-    return stl_input, args.mode, int(slices), args.destroyDB
+    if args.fft_dim is not None:
+        fft_dim = args.fft_dim
+    return stl_input, args.mode, int(slices), int(fft_dim), args.destroyDB
 
 '''
 Sort the list for the given axis

@@ -14,7 +14,7 @@ import logging, sys
 '''
 The size of the grid that all shapes will scale to.
 '''
-GRID_SIZE = 1000
+GRID_SIZE = 100 # needed to make this smaller to accomodate 3D FFT
 
 '''
 Degree to which a fingerprint can be paired with its neighbors -- higher will cause more fingerprints, but potentially better accuracy.
@@ -35,7 +35,7 @@ DEFAULT_NUM_OF_PEAKS = 10
 '''
 * Open fileName STL file
 * Parse the points
-* Return array of 3D points  
+* Return array of 3D points
 '''
 def stl_to_points_array(fileName):
     stl = open(fileName, "r")
@@ -64,7 +64,7 @@ def stl_to_points_array(fileName):
 
 
 '''
-Determine scale factor and update all points. 
+Determine scale factor and update all points.
 '''
 def scale_points(points_array, grid_size=1000):
     # Find scale factor
@@ -84,9 +84,13 @@ def scale_points(points_array, grid_size=1000):
 * Takes a grid and detect the peaks using the local maximum filter.
 * Returns a boolean mask of the peaks (i.e. 1 when the pixel's value is the neighborhood maximum, 0 otherwise)
 '''
-def detect_peaks(grid):
+def detect_peaks(grid, fft_dim):
     # define an 8-connected neighborhood
-    neighborhood = generate_binary_structure(2, 2)
+    if (fft_dim == 3):
+        neighborhood = generate_binary_structure(3, 2)
+    else:
+        neighborhood = generate_binary_structure(2, 2)
+
 
     # apply the local maximum filter; all pixel of maximal value in their neighborhood are set to 1
     local_max = (maximum_filter(grid, footprint=neighborhood) == grid)
@@ -103,9 +107,9 @@ def detect_peaks(grid):
     return detected_peaks
 
 
-def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices):
+def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, fft_dim):
     maxima_list = []
-    
+
     # Sort by axis
     scaled_points_array = sort_by_axis(axis, copy.deepcopy(points_array))
 
@@ -114,41 +118,80 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices):
     for i in range(num_of_slices):
 
         # Put points on the grid
-        grid = np.zeros((GRID_SIZE, GRID_SIZE))
-        for j in range(points_per_slice):
+        if (fft_dim == 3):
+            grid = np.zeros((GRID_SIZE, GRID_SIZE, GRID_SIZE))
+            for j in range(points_per_slice):
 
-            idx = (i * points_per_slice) + j
-            if (idx >= len(scaled_points_array)):
-                break
-            p = scaled_points_array[idx]
-            grid[p.x][p.y] = 1
+                idx = (i * points_per_slice) + j
+                if (idx >= len(scaled_points_array)):
+                    break
+                p = scaled_points_array[idx]
+                grid[p.x][p.y][p.z] = 1
 
-        # FTT
-        grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
+            # 3D-FFT
+            grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fftn(grid))
+            # Find peaks
+            detected_peaks = detect_peaks(grid_fft, fft_dim)
+            magnitudes = grid_fft[detected_peaks]
+            j_arr, i_arr, z_arr = np.where(detected_peaks)
 
-        # Find peaks
-        detected_peaks = detect_peaks(grid_fft)
-        magnitudes = grid_fft[detected_peaks]
-        j_arr, i_arr = np.where(detected_peaks)
+            # Find minimum magnitude with respect to the number of peaks to keep
+            min_magnitude = nth_largest(num_of_peaks_to_keep, magnitudes)
 
-        # Find minimum magnitude with respect to the number of peaks to keep
-        min_magnitude = nth_largest(num_of_peaks_to_keep, magnitudes)
+            # filter peaks
+            magnitudes = magnitudes.flatten()
+            peaks = zip(i_arr, j_arr, z_arr, magnitudes)
+            peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
 
-        # filter peaks
-        magnitudes = magnitudes.flatten()
-        peaks = zip(i_arr, j_arr, magnitudes)
-        peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
+            # get indices for frequency x and frequency y
+            frequency_x_idx = []
+            frequency_y_idx = []
+            frequency_z_idx = []
+            for x in peaks_filtered:
+                frequency_x_idx.append(x[2])
+                frequency_y_idx.append(x[1])
+                frequency_z_idx.append(x[0])
+            local_maxima = zip(frequency_x_idx, frequency_y_idx, frequency_z_idx, [i for k in range(len(frequency_y_idx))])
 
-        # get indices for frequency x and frequency y
-        frequency_x_idx = []
-        frequency_y_idx = []
-        for x in peaks_filtered:
-            frequency_x_idx.append(x[1])
-            frequency_y_idx.append(x[0])
-        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
+            maxima_list += local_maxima
+            return maxima_list
 
-        maxima_list += local_maxima
-    return maxima_list
+        else:
+            grid = np.zeros((GRID_SIZE, GRID_SIZE))
+            for j in range(points_per_slice):
+
+                idx = (i * points_per_slice) + j
+                if (idx >= len(scaled_points_array)):
+                    break
+                p = scaled_points_array[idx]
+                grid[p.x][p.y] = 1
+
+            # 2D-FTT
+            grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
+
+            # Find peaks
+            detected_peaks = detect_peaks(grid_fft, fft_dim)
+            magnitudes = grid_fft[detected_peaks]
+            j_arr, i_arr = np.where(detected_peaks)
+
+            # Find minimum magnitude with respect to the number of peaks to keep
+            min_magnitude = nth_largest(num_of_peaks_to_keep, magnitudes)
+
+            # filter peaks
+            magnitudes = magnitudes.flatten()
+            peaks = zip(i_arr, j_arr, magnitudes)
+            peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
+
+            # get indices for frequency x and frequency y
+            frequency_x_idx = []
+            frequency_y_idx = []
+            for x in peaks_filtered:
+                frequency_x_idx.append(x[1])
+                frequency_y_idx.append(x[0])
+            local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
+
+            maxima_list += local_maxima
+            return maxima_list
 
 '''
 Generate the fingerprint of a STL file and store it in the hash table.
@@ -157,28 +200,28 @@ Generate the fingerprint of a STL file and store it in the hash table.
     num_of_peaks_to_keep: Number of peaks to keep after filtering the rest out
     fan_value           : Degree to which a fingerprint can be paired with its neighbors
 '''
-def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEAKS, fan_value=DEFAULT_FAN_VALUE):
+def fingerprint(stl_file, num_of_slices, fft_dim, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEAKS, fan_value=DEFAULT_FAN_VALUE):
     # Parse STL and interpolate points
     points_array = stl_to_points_array(stl_file)
 
     # Scale points
     scaled_points_array = scale_points(points_array, GRID_SIZE)
 
-    maxima_list_X = slice_and_fft(Axis.X, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
-    maxima_list_Y = slice_and_fft(Axis.Y, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
-    maxima_list_Z = slice_and_fft(Axis.Z, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
+    maxima_list_X = slice_and_fft(Axis.X, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fft_dim)
+    maxima_list_Y = slice_and_fft(Axis.Y, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fft_dim)
+    maxima_list_Z = slice_and_fft(Axis.Z, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fft_dim)
 
     log('len(maxima_list_X): ' + str(len(maxima_list_X)))
     log('len(maxima_list_Y): ' + str(len(maxima_list_Y)))
     log('len(maxima_list_Z): ' + str(len(maxima_list_Z)))
-    
+
     signatures = []
-    signatures += generate_hashes(maxima_list_X, fan_value)
-    signatures += generate_hashes(maxima_list_Y, fan_value)
-    signatures += generate_hashes(maxima_list_Z, fan_value)
+    signatures += generate_hashes(maxima_list_X, fft_dim, fan_value)
+    signatures += generate_hashes(maxima_list_Y, fft_dim, fan_value)
+    signatures += generate_hashes(maxima_list_Z, fft_dim, fan_value)
 
     log('len(signatures): ' + str(len(signatures)))
-    
+
     # Generate hashes
     return signatures
 
@@ -186,7 +229,7 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEA
 '''
 Generate Hashes: returns a list of sha1 digests and anchor slice numbers
 '''
-def generate_hashes(peaks_list, fan_value=DEFAULT_FAN_VALUE):
+def generate_hashes(peaks_list, fft_dim, fan_value=DEFAULT_FAN_VALUE):
     signatures = []
     # Use each point as an anchor
     for i in range(len(peaks_list) - fan_value):
@@ -204,4 +247,3 @@ def generate_hashes(peaks_list, fan_value=DEFAULT_FAN_VALUE):
             slice_num = anchor[2]
             signatures.append( (key, slice_num) )
     return signatures
-
