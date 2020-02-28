@@ -1,7 +1,6 @@
 import plyvel
-from fingerprint import *
-from helper import *
-from parameters import *
+import fingerprint
+import helper
 
 
 def addSignaturesToDB(db, signatures, filename):
@@ -73,7 +72,7 @@ def searchSignaturesInDB(db, signatures):
     '''
     unique_matches = {}
     collision_matches = {}
-    for i in range(min(NUMBER_OF_MATCHES, len(unique_matches_sorted))):
+    for i in range(min(helper.NUMBER_OF_MATCHES, len(unique_matches_sorted))):
         unique_matches[unique_matches_sorted[i][0]] = (len(unique_matches_sorted[i][1]) - 1) / len(signatures)
         collision_matches[with_collisions_matches_sorted[i][0]] = with_collisions_matches_sorted[i][1]['total'] / len(signatures)
         
@@ -83,7 +82,7 @@ def searchSignaturesInDB(db, signatures):
 
 def main():
     # parse arguments
-    stl_file, mode, num_of_slices, destroyDB = parseArgs()
+    stl_file, mode, destroyDB = helper.parseArgs()
     
     if destroyDB:
         plyvel.destroy_db('./avocado_db')
@@ -91,9 +90,17 @@ def main():
     # open (or create) database
     db = plyvel.DB('./avocado_db', create_if_missing=True)
     
+    if helper.VERBOSE:
+        print('Generating fingerprint of ' + stl_file + ' with:' +
+        '\n\tNumber of matches : ' + str(helper.NUMBER_OF_MATCHES) +
+        '\n\tFan value : ' + str(helper.FAN_VALUE) +
+        '\n\tNumber of slices : ' + str(helper.NUM_OF_SLICES) +
+        '\n\tNumber of peaks : ' + str(helper.NUM_OF_PEAKS) +
+        '\n\tGrid size : ' + str(helper.GRID_SIZE) +
+        '\n')
+    
     # generate fingerprint of the file
-    print('Generating fingerprint of ' + stl_file + '\n')
-    signatures = fingerprint(stl_file, num_of_slices, DEFAULT_NUM_OF_PEAKS, DEFAULT_FAN_VALUE)
+    signatures = fingerprint.fingerprint(stl_file, helper.NUM_OF_SLICES, helper.NUM_OF_PEAKS, helper.FAN_VALUE)
     
     # Add fingerprint to database
     if mode == 'learn':

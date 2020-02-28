@@ -4,8 +4,7 @@ import math
 import numpy as np
 import copy
 import hashlib
-from helper import *
-from parameters import *
+import helper
 from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 
@@ -25,7 +24,7 @@ def stl_to_points_array(fileName):
         if "vertex" in line and in_triangle:
             points_count += 1
             tokens = line.split()
-            p = Point(tokens)
+            p = helper.Point(tokens)
             triangle.append(p)
         elif "outer loop" in line:
             in_triangle = True
@@ -46,9 +45,9 @@ Determine scale factor and update all points.
 '''
 def scale_points(points_array, grid_size=1000):
     # Find scale factor
-    max_x, min_x, range_x = find_max_min_range(points_array, Axis.X)
-    max_y, min_y, range_y = find_max_min_range(points_array, Axis.Y)
-    max_z, min_z, range_z = find_max_min_range(points_array, Axis.Z)
+    max_x, min_x, range_x = helper.find_max_min_range(points_array, helper.Axis.X)
+    max_y, min_y, range_y = helper.find_max_min_range(points_array, helper.Axis.Y)
+    max_z, min_z, range_z = helper.find_max_min_range(points_array, helper.Axis.Z)
     scale_factor = float(grid_size - 1) / max(range_x, range_y, range_z)
     # Update points
     for i in range(len(points_array)):
@@ -85,14 +84,14 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices):
     maxima_list = []
     
     # Sort by axis
-    scaled_points_array = sort_by_axis(axis, copy.deepcopy(points_array))
+    scaled_points_array = helper.sort_by_axis(axis, copy.deepcopy(points_array))
 
     # For each slice
     points_per_slice = math.ceil(len(scaled_points_array) / num_of_slices)
     for i in range(num_of_slices):
 
         # Put points on the grid
-        grid = np.zeros((GRID_SIZE, GRID_SIZE))
+        grid = np.zeros((helper.GRID_SIZE, helper.GRID_SIZE))
         for j in range(points_per_slice):
 
             idx = (i * points_per_slice) + j
@@ -110,7 +109,7 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices):
         j_arr, i_arr = np.where(detected_peaks)
 
         # Find minimum magnitude with respect to the number of peaks to keep
-        min_magnitude = nth_largest(num_of_peaks_to_keep, magnitudes)
+        min_magnitude = helper.nth_largest(num_of_peaks_to_keep, magnitudes)
 
         # filter peaks
         magnitudes = magnitudes.flatten()
@@ -135,27 +134,27 @@ Generate the fingerprint of a STL file and store it in the hash table.
     num_of_peaks_to_keep: Number of peaks to keep after filtering the rest out
     fan_value           : Degree to which a fingerprint can be paired with its neighbors
 '''
-def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEAKS, fan_value=DEFAULT_FAN_VALUE):
+def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value):
     # Parse STL and interpolate points
     points_array = stl_to_points_array(stl_file)
 
     # Scale points
-    scaled_points_array = scale_points(points_array, GRID_SIZE)
+    scaled_points_array = scale_points(points_array, helper.GRID_SIZE)
 
-    maxima_list_X = slice_and_fft(Axis.X, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
-    maxima_list_Y = slice_and_fft(Axis.Y, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
-    maxima_list_Z = slice_and_fft(Axis.Z, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
+    maxima_list_X = slice_and_fft(helper.Axis.X, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
+    maxima_list_Y = slice_and_fft(helper.Axis.Y, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
+    maxima_list_Z = slice_and_fft(helper.Axis.Z, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
 
-    log('len(maxima_list_X): ' + str(len(maxima_list_X)))
-    log('len(maxima_list_Y): ' + str(len(maxima_list_Y)))
-    log('len(maxima_list_Z): ' + str(len(maxima_list_Z)))
+    helper.log('len(maxima_list_X): ' + str(len(maxima_list_X)))
+    helper.log('len(maxima_list_Y): ' + str(len(maxima_list_Y)))
+    helper.log('len(maxima_list_Z): ' + str(len(maxima_list_Z)))
     
     signatures = []
     signatures += generate_hashes(maxima_list_X, fan_value)
     signatures += generate_hashes(maxima_list_Y, fan_value)
     signatures += generate_hashes(maxima_list_Z, fan_value)
 
-    log('len(signatures): ' + str(len(signatures)))
+    helper.log('len(signatures): ' + str(len(signatures)))
     
     # Generate hashes
     return signatures
@@ -164,7 +163,7 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep=DEFAULT_NUM_OF_PEA
 '''
 Generate Hashes: returns a list of sha1 digests and anchor slice numbers
 '''
-def generate_hashes(peaks_list, fan_value=DEFAULT_FAN_VALUE):
+def generate_hashes(peaks_list, fan_value):
     signatures = []
     # Use each point as an anchor
     for i in range(len(peaks_list) - fan_value):

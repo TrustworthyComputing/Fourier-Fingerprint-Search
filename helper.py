@@ -4,6 +4,42 @@ import heapq
 from enum import Enum
 from colorama import Fore, Style
 
+'''
+Debug flag.
+'''
+DEBUG = False
+
+'''
+Verbose flag for various print messages.
+'''
+VERBOSE = False
+
+'''
+The maximum number of matches to return
+'''
+NUMBER_OF_MATCHES = 5
+
+'''
+Degree to which a fingerprint can be paired with its neighbors -- higher will cause more fingerprints, but potentially better accuracy.
+'''
+FAN_VALUE = 10
+
+'''
+The number of slices to split our shape to.
+'''
+NUM_OF_SLICES = 10
+
+'''
+The number of peaks to keep after filtering out.
+'''
+NUM_OF_PEAKS = 10
+
+'''
+The size of the grid that all shapes will scale to.
+'''
+GRID_SIZE = 1000
+
+
 class Axis(Enum):
     X = 1
     Y = 2
@@ -18,8 +54,6 @@ class Point:
     def print_point(self):
         print(str(self.x) + ' \t ' + str(self.y) + ' \t ' + str(self.z))
 
-DEBUG = False
-
 def log(s):
     if DEBUG:
         print(Fore.YELLOW + str(s) + Style.RESET_ALL)
@@ -29,11 +63,16 @@ Parse arguments and perform checks.
 '''
 def parseArgs():
     parser = argparse.ArgumentParser(description='STL compression')
-    parser.add_argument('--stl', help='Path to STL file (.stl)', required=True)
-    parser.add_argument('--mode', type=str.lower, choices=['learn', 'search'], help='Learn (l) or Search (s) mode', required=True)
-    parser.add_argument('--slices', help='Number of slices', required=False)
-    parser.add_argument('--destroyDB', help='Destroy the database', action='store_true', required=False)
-    parser.add_argument('--debug', help='Enable debug mode', action='store_true', required=False)
+    parser.add_argument('--stl', help='Path to STL file (.stl).', required=True)
+    parser.add_argument('--mode', type=str.lower, choices=['learn', 'search'], help='Learn (l) or Search (s) mode.', required=True)
+    parser.add_argument('--matches_num', help='Maximum number of matches to return.', required=False)
+    parser.add_argument('--slices', help='Number of slices.', required=False)
+    parser.add_argument('--fanout', help='Degree to which a fingerprint can be paired with its neighbors.', required=False)
+    parser.add_argument('--peaks_num', help='The number of peaks to keep after filtering out.', required=False)
+    parser.add_argument('--grid_size', help='The size of the grid that all shapes will scale to.', required=False)
+    parser.add_argument('--destroyDB', help='Destroy the database.', action='store_true', required=False)
+    parser.add_argument('--verbose', help='Enable verbose mode.', action='store_true', required=False)
+    parser.add_argument('--debug', help='Enable debug mode.', action='store_true', required=False)
     args = parser.parse_args()
     stl_input = args.stl
     if not args.stl.endswith(".stl"):
@@ -42,12 +81,33 @@ def parseArgs():
     if not os.path.isfile(args.stl):
         print("Input file '" + args.stl + "' does not exist.")
         exit(-2)
-    slices = 10
+    
     global DEBUG
+    global VERBOSE
+    global NUMBER_OF_MATCHES
+    global FAN_VALUE
+    global NUM_OF_SLICES
+    global NUM_OF_PEAKS
+    global GRID_SIZE
+    
     DEBUG = args.debug
+    VERBOSE = args.verbose
+    if args.matches_num is not None:
+        NUMBER_OF_MATCHES = int(args.matches_num)
+    
+    if args.fanout is not None:
+        FAN_VALUE = int(args.fanout)
+
     if args.slices is not None:
-        slices = args.slices
-    return stl_input, args.mode, int(slices), args.destroyDB
+        NUM_OF_SLICES = int(args.slices)
+    
+    if args.peaks_num is not None:
+        NUM_OF_PEAKS = int(args.peaks_num)
+        
+    if args.grid_size is not None:
+        GRID_SIZE = int(args.grid_size)
+    
+    return stl_input, args.mode, args.destroyDB
 
 '''
 Sort the list for the given axis
