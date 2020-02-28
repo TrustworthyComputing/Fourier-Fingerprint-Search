@@ -92,6 +92,9 @@ Return the nth largest of a list
 def nth_largest(n, lst):
     return heapq.nlargest(n, lst)[-1]
 
-def quantizer(num, accuracy=0.02):
+def quantizer(nums, accuracy=0.02):
     factor = 1.0 / accuracy
-    return round(num*factor)/factor
+    nums[1] = round(float(nums[1])*factor)/factor
+    nums[2] = round(float(nums[2])*factor)/factor
+    nums[3] = round(float(nums[3])*factor)/factor
+    return nums

@@ -33,10 +33,25 @@ DEFAULT_NUM_OF_PEAKS = 10
 
 
 '''
+Calculate the centroid of a triangle in 3D space
+'''
+def tri_centroid(triangle):
+    x = 0.0
+    y = 0.0
+    z = 0.0
+    for point in triangle:
+        x += point.x
+        y += point.y
+        z += point.z
+
+    return Point(quantizer(['vertex', x / 3, y / 3, z / 3]))
+
+'''
 * Open fileName STL file
 * Parse the points
 * Return array of 3D points
 '''
+
 def stl_to_points_array(fileName):
     stl = open(fileName, "r")
     points_array = []
@@ -47,7 +62,7 @@ def stl_to_points_array(fileName):
         if "vertex" in line and in_triangle:
             points_count += 1
             tokens = line.split()
-            p = Point(tokens)
+            p = Point(quantizer(tokens))
             triangle.append(p)
         elif "outer loop" in line:
             in_triangle = True
@@ -55,9 +70,23 @@ def stl_to_points_array(fileName):
             in_triangle = False
             assert (points_count == 3)
             points_count = 0
-            # TODO: interpolate
             for p in triangle:
                 points_array.append(p)
+            prev_center = Point(['vertex', -100000.0, -100000.0, -100000.0])
+
+            #interpolate
+            while (1):
+                center = tri_centroid([triangle[0], triangle[1], triangle[2]])
+                point_1 = tri_centroid([center, triangle[0], triangle[1]])
+                point_2 = tri_centroid([center, triangle[0], triangle[2]])
+                point_3 = tri_centroid([center, triangle[1], triangle[2]])
+                triangle = [point_1, point_2, point_3]
+                for p in triangle:
+                    points_array.append(copy.deepcopy(p))
+                points_array.append(center)
+                if (prev_center.x == center.x and prev_center.y == center.y and prev_center.z == center.z):
+                    break;
+                prev_center = center
             triangle = []
     stl.close()
     return points_array
@@ -165,6 +194,8 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, fft_d
                 p = scaled_points_array[idx]
                 grid[p.x][p.y] = 1
 
+            np.set_printoptions(threshold=sys.maxsize)
+            print(grid)
             # 2D-FTT
             grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
 
