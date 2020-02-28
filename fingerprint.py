@@ -134,14 +134,13 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, fft_d
             detected_peaks = detect_peaks(grid_fft, fft_dim)
             magnitudes = grid_fft[detected_peaks]
             j_arr, i_arr, z_arr = np.where(detected_peaks)
-
             # Find minimum magnitude with respect to the number of peaks to keep
             min_magnitude = nth_largest(num_of_peaks_to_keep, magnitudes)
 
             # filter peaks
             magnitudes = magnitudes.flatten()
             peaks = zip(i_arr, j_arr, z_arr, magnitudes)
-            peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
+            peaks_filtered = filter(lambda x: x[3] >= min_magnitude, peaks)  # freq, time, mag
 
             # get indices for frequency x and frequency y
             frequency_x_idx = []
