@@ -5,6 +5,7 @@ import numpy as np
 import copy
 import hashlib
 import helper
+import multiprocessing as mp
 from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 
@@ -80,6 +81,28 @@ def detect_peaks(grid):
     return detected_peaks
 
 
+'''
+* Generate slices, apply FFT and generate the hashes for a given axis.
+* The three axes can be run in parallel.
+'''
+def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of_slices, fan_value, parallel_output):
+    # Find peaks
+    maxima_list = slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices)
+    
+    # If debug, log the peaks list length
+    helper.log('len(maxima_list_' + str(axis) + '): ' + str(len(maxima_list)))
+    
+    # Generate hashes
+    signatures = generate_hashes(maxima_list, fan_value)
+    
+    # Add hashes to the results
+    parallel_output.put(signatures)
+
+
+'''
+Slice the array of points, calculate FFT and find the peaks.
+Return a list of peaks.
+'''
 def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices):
     maxima_list = []
     
@@ -127,38 +150,6 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices):
         maxima_list += local_maxima
     return maxima_list
 
-'''
-Generate the fingerprint of a STL file and store it in the hash table.
-    stl_file            : STL input file name.
-    num_of_slices       : Number of slices to split the STL file to
-    num_of_peaks_to_keep: Number of peaks to keep after filtering the rest out
-    fan_value           : Degree to which a fingerprint can be paired with its neighbors
-'''
-def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value):
-    # Parse STL and interpolate points
-    points_array = stl_to_points_array(stl_file)
-
-    # Scale points
-    scaled_points_array = scale_points(points_array, helper.GRID_SIZE)
-
-    maxima_list_X = slice_and_fft(helper.Axis.X, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
-    maxima_list_Y = slice_and_fft(helper.Axis.Y, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
-    maxima_list_Z = slice_and_fft(helper.Axis.Z, scaled_points_array, num_of_peaks_to_keep, num_of_slices)
-
-    helper.log('len(maxima_list_X): ' + str(len(maxima_list_X)))
-    helper.log('len(maxima_list_Y): ' + str(len(maxima_list_Y)))
-    helper.log('len(maxima_list_Z): ' + str(len(maxima_list_Z)))
-    
-    signatures = []
-    signatures += generate_hashes(maxima_list_X, fan_value)
-    signatures += generate_hashes(maxima_list_Y, fan_value)
-    signatures += generate_hashes(maxima_list_Z, fan_value)
-
-    helper.log('len(signatures): ' + str(len(signatures)))
-    
-    # Generate hashes
-    return signatures
-
 
 '''
 Generate Hashes: returns a list of sha1 digests and anchor slice numbers
@@ -182,3 +173,39 @@ def generate_hashes(peaks_list, fan_value):
             signatures.append( (key, slice_num) )
     return signatures
 
+
+'''
+Generate the fingerprint of a STL file and store it in the hash table.
+    stl_file            : STL input file name.
+    num_of_slices       : Number of slices to split the STL file to
+    num_of_peaks_to_keep: Number of peaks to keep after filtering the rest out
+    fan_value           : Degree to which a fingerprint can be paired with its neighbors
+'''
+def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value):
+    # Parse STL and interpolate points
+    points_array = stl_to_points_array(stl_file)
+
+    # Scale points
+    scaled_points_array = scale_points(points_array, helper.GRID_SIZE)
+
+    # Find the signatures for each axis in parallel
+    parallel_output = mp.Queue()
+    processes = []
+    for axis in helper.Axis:
+        p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, parallel_output))
+        p.start()
+        processes.append(p)
+    for p in processes:
+        p.join()
+
+    # Retrieve the signatures
+    signatures = []
+    parallel_results = [parallel_output.get() for p in processes]
+    signatures += parallel_results[0]
+    signatures += parallel_results[1]
+    signatures += parallel_results[2]
+
+    helper.log('len(signatures): ' + str(len(signatures)))
+    
+    # Return the list of hashes
+    return signatures
