@@ -207,5 +207,10 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value):
 
     helper.log('len(signatures): ' + str(len(signatures)))
     
+    if len(signatures) == 0:
+        print()
+        helper.error('No signatures generated. Try either decreasing the fan-value or increasing the number of slices.')
+        exit(-1)
+    
     # Return the list of hashes
     return signatures
