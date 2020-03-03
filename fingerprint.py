@@ -133,6 +133,9 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices):
 
         # Find minimum magnitude with respect to the number of peaks to keep
         min_magnitude = helper.nth_largest(num_of_peaks_to_keep, magnitudes)
+        # If a slice does not have any peaks, continue
+        if min_magnitude is None:
+            continue
 
         # filter peaks
         magnitudes = magnitudes.flatten()

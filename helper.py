@@ -158,6 +158,8 @@ def find_max_min_range(points_array, axis):
 Return the nth largest of a list
 '''
 def nth_largest(n, lst):
+    if len(lst) == 0:
+        return None
     return heapq.nlargest(n, lst)[-1]
 
 
