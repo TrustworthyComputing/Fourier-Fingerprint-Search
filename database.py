@@ -39,7 +39,6 @@ def addSignaturesToDB(db, signatures, filename):
         # If this is the first occurence of this hash
         if prev_values is None:
             db.put(hash, new_value.encode())
-            helper.log(new_value)
         
         # If we have seen this hash previously, check if it's from a different file
         else:
@@ -55,7 +54,6 @@ def addSignaturesToDB(db, signatures, filename):
             prev_values.append(slice_no)
             prev_values.append(filename)
             str_value = ' '.join([str(el) for el in prev_values])
-            helper.log(str_value)
             db.put(sig[0], str_value.encode())
 
 

@@ -39,6 +39,11 @@ The size of the grid that all shapes will scale to.
 '''
 GRID_SIZE = 1000
 
+'''
+Flag to print collisions within a single file.
+'''
+PRINT_COLLISIONS = False
+
 
 class Axis(Enum):
     X = 1
@@ -58,12 +63,15 @@ def log(s):
     if DEBUG:
         print(Fore.YELLOW + str(s) + Style.RESET_ALL)
 
+def error(s):
+    print(Fore.RED + str(s) + Style.RESET_ALL)
+
 '''
 Parse arguments and perform checks.
 '''
 def parseArgs():
     parser = argparse.ArgumentParser(description='STL compression')
-    parser.add_argument('--stl', help='Path to STL file (.stl).', required=True)
+    parser.add_argument('--stl', help='Path to STL files (.stl).', type=argparse.FileType('r'), nargs='+', required=True)
     parser.add_argument('--mode', type=str.lower, choices=['learn', 'search'], help='Learn (l) or Search (s) mode.', required=True)
     parser.add_argument('--matches_num', help='Maximum number of matches to return.', required=False)
     parser.add_argument('--slices', help='Number of slices.', required=False)
@@ -73,15 +81,16 @@ def parseArgs():
     parser.add_argument('--destroyDB', help='Destroy the database.', action='store_true', required=False)
     parser.add_argument('--verbose', help='Enable verbose mode.', action='store_true', required=False)
     parser.add_argument('--debug', help='Enable debug mode.', action='store_true', required=False)
+    parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
     args = parser.parse_args()
-    stl_input = args.stl
-    if not args.stl.endswith(".stl"):
-        print("STL file should end with '.stl' extension.")
-        exit(-1)
-    if not os.path.isfile(args.stl):
-        print("Input file '" + args.stl + "' does not exist.")
-        exit(-2)
     
+    stl_inputs = []
+    for file in args.stl:
+        if not file.name.endswith('.stl'):
+            error('STL file should end with .stl extension: ' + file.name)
+            exit(-1)
+        stl_inputs.append(file.name)
+
     global DEBUG
     global VERBOSE
     global NUMBER_OF_MATCHES
@@ -89,9 +98,11 @@ def parseArgs():
     global NUM_OF_SLICES
     global NUM_OF_PEAKS
     global GRID_SIZE
+    global PRINT_COLLISIONS
     
     DEBUG = args.debug
     VERBOSE = args.verbose
+    PRINT_COLLISIONS = args.print_collisions
     if args.matches_num is not None:
         NUMBER_OF_MATCHES = int(args.matches_num)
     
@@ -107,7 +118,7 @@ def parseArgs():
     if args.grid_size is not None:
         GRID_SIZE = int(args.grid_size)
     
-    return stl_input, args.mode, args.destroyDB
+    return stl_inputs, args.mode, args.destroyDB
 
 '''
 Sort the list for the given axis
@@ -120,7 +131,7 @@ def sort_by_axis(axis, points):
     elif axis == Axis.Z:
         return sorted(points, key=lambda point: point.z)
     else:
-        print("No such axis.")
+        print('No such axis.')
 
 '''
 Find min, max and range for the given axis
@@ -142,12 +153,24 @@ def find_max_min_range(points_array, axis):
         range_z = max_z - min_z
         return max_z, min_z, range_z
 
+
 '''
 Return the nth largest of a list
 '''
 def nth_largest(n, lst):
     return heapq.nlargest(n, lst)[-1]
 
+
 def quantizer(num, accuracy=0.02):
     factor = 1.0 / accuracy
     return round(num*factor)/factor
+
+
+def print_matches(mathes_dict):
+    if len(mathes_dict) == 0:
+        print('0')
+    else:
+        print()
+    for match, accuracy in mathes_dict.items():
+        print('\t' + match + '\t:\t' + str(round(accuracy, 3)))
+

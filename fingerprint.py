@@ -90,7 +90,7 @@ def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of
     maxima_list = slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices)
     
     # If debug, log the peaks list length
-    helper.log('len(maxima_list_' + str(axis) + '): ' + str(len(maxima_list)))
+    helper.log('\nlen(maxima_list_' + str(axis) + '): ' + str(len(maxima_list)))
     
     # Generate hashes
     signatures = generate_hashes(maxima_list, fan_value)
