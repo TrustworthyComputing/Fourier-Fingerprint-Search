@@ -13,7 +13,7 @@ from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 '''
 * Open fileName STL file
 * Parse the points
-* Return array of 3D points  
+* Return array of 3D points
 '''
 def stl_to_points_array(fileName):
     stl = open(fileName, "r")
@@ -42,7 +42,7 @@ def stl_to_points_array(fileName):
 
 
 '''
-Determine scale factor and update all points. 
+Determine scale factor and update all points.
 '''
 def scale_points(points_array, grid_size=1000):
     # Find scale factor
@@ -85,16 +85,16 @@ def detect_peaks(grid):
 * Generate slices, apply FFT and generate the hashes for a given axis.
 * The three axes can be run in parallel.
 '''
-def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of_slices, fan_value, parallel_output):
+def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of_slices, fan_value, parallel_output, rotation):
     # Find peaks
-    maxima_list = slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices)
-    
+    maxima_list = slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rotation)
+
     # If debug, log the peaks list length
     helper.log('\nlen(maxima_list_' + str(axis) + '): ' + str(len(maxima_list)))
-    
+
     # Generate hashes
     signatures = generate_hashes(maxima_list, fan_value)
-    
+
     # Add hashes to the results
     parallel_output.put(signatures)
 
@@ -103,9 +103,9 @@ def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of
 Slice the array of points, calculate FFT and find the peaks.
 Return a list of peaks.
 '''
-def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices):
+def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rotation):
     maxima_list = []
-    
+
     # Sort by axis
     scaled_points_array = helper.sort_by_axis(axis, copy.deepcopy(points_array))
 
@@ -123,34 +123,67 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices):
             p = scaled_points_array[idx]
             grid[p.x][p.y] = 1
 
-        # FTT
-        grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
+        if rotation:
+            for r in range(3):
+                grid = helper.rot90(grid)
+                # FTT
+                grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
 
-        # Find peaks
-        detected_peaks = detect_peaks(grid_fft)
-        magnitudes = grid_fft[detected_peaks]
-        j_arr, i_arr = np.where(detected_peaks)
+                # Find peaks
+                detected_peaks = detect_peaks(grid_fft)
+                magnitudes = grid_fft[detected_peaks]
+                j_arr, i_arr = np.where(detected_peaks)
 
-        # Find minimum magnitude with respect to the number of peaks to keep
-        min_magnitude = helper.nth_largest(num_of_peaks_to_keep, magnitudes)
-        # If a slice does not have any peaks, continue
-        if min_magnitude is None:
-            continue
+                # Find minimum magnitude with respect to the number of peaks to keep
+                min_magnitude = helper.nth_largest(num_of_peaks_to_keep, magnitudes)
+                # If a slice does not have any peaks, continue
+                if min_magnitude is None:
+                    continue
 
-        # filter peaks
-        magnitudes = magnitudes.flatten()
-        peaks = zip(i_arr, j_arr, magnitudes)
-        peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
+                # filter peaks
+                magnitudes = magnitudes.flatten()
+                peaks = zip(i_arr, j_arr, magnitudes)
+                peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
 
-        # get indices for frequency x and frequency y
-        frequency_x_idx = []
-        frequency_y_idx = []
-        for x in peaks_filtered:
-            frequency_x_idx.append(x[1])
-            frequency_y_idx.append(x[0])
-        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
+                # get indices for frequency x and frequency y
+                frequency_x_idx = []
+                frequency_y_idx = []
+                for x in peaks_filtered:
+                    frequency_x_idx.append(x[1])
+                    frequency_y_idx.append(x[0])
+                local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
 
-        maxima_list += local_maxima
+                maxima_list += local_maxima
+
+        else:
+            # FTT
+            grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
+
+            # Find peaks
+            detected_peaks = detect_peaks(grid_fft)
+            magnitudes = grid_fft[detected_peaks]
+            j_arr, i_arr = np.where(detected_peaks)
+
+            # Find minimum magnitude with respect to the number of peaks to keep
+            min_magnitude = helper.nth_largest(num_of_peaks_to_keep, magnitudes)
+            # If a slice does not have any peaks, continue
+            if min_magnitude is None:
+                continue
+
+            # filter peaks
+            magnitudes = magnitudes.flatten()
+            peaks = zip(i_arr, j_arr, magnitudes)
+            peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
+
+            # get indices for frequency x and frequency y
+            frequency_x_idx = []
+            frequency_y_idx = []
+            for x in peaks_filtered:
+                frequency_x_idx.append(x[1])
+                frequency_y_idx.append(x[0])
+            local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
+
+            maxima_list += local_maxima
     return maxima_list
 
 
@@ -184,7 +217,7 @@ Generate the fingerprint of a STL file and store it in the hash table.
     num_of_peaks_to_keep: Number of peaks to keep after filtering the rest out
     fan_value           : Degree to which a fingerprint can be paired with its neighbors
 '''
-def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value):
+def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotation):
     # Parse STL and interpolate points
     points_array = stl_to_points_array(stl_file)
 
@@ -195,25 +228,38 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value):
     parallel_output = mp.Queue()
     processes = []
     for axis in helper.Axis:
-        p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, parallel_output))
-        p.start()
+        p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, parallel_output, False))
         processes.append(p)
+        if rotation:
+            p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, parallel_output, True))
+            processes.append(p)
+
+    for p in processes:
+        p.start()
+
+    signatures = []
     for p in processes:
         p.join()
+        partial_results = parallel_output.get()
+        signatures += partial_results
 
     # Retrieve the signatures
-    signatures = []
-    parallel_results = [parallel_output.get() for p in processes]
-    signatures += parallel_results[0]
-    signatures += parallel_results[1]
-    signatures += parallel_results[2]
+    # parallel_results = [parallel_output.get() for p in processes]
+    # signatures += parallel_results[0]
+    # signatures += parallel_results[1]
+    # signatures += parallel_results[2]
+    #
+    # if rotation:
+    #     signatures += parallel_results[3]
+    #     signatures += parallel_results[4]
+    #     signatures += parallel_results[5]
 
     helper.log('len(signatures): ' + str(len(signatures)))
-    
+
     if len(signatures) == 0:
         print()
         helper.error('No signatures generated. Try either decreasing the fan-value or increasing the number of slices.')
         exit(-1)
-    
+
     # Return the list of hashes
     return signatures

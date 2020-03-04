@@ -1,8 +1,10 @@
 import os
 import argparse
+import numpy as np
 import heapq
 from enum import Enum
 from colorama import Fore, Style
+import copy
 
 '''
 Debug flag.
@@ -40,6 +42,11 @@ The size of the grid that all shapes will scale to.
 GRID_SIZE = 1000
 
 '''
+Rotation flag.
+'''
+ROTATE = False
+
+'''
 Flag to print collisions within a single file.
 '''
 PRINT_COLLISIONS = False
@@ -49,7 +56,7 @@ class Axis(Enum):
     X = 1
     Y = 2
     Z = 3
-    
+
 class Point:
     def __init__(self, token):
         self.x = float(token[1])
@@ -78,12 +85,13 @@ def parseArgs():
     parser.add_argument('--fanout', help='Degree to which a fingerprint can be paired with its neighbors.', required=False)
     parser.add_argument('--peaks_num', help='The number of peaks to keep after filtering out.', required=False)
     parser.add_argument('--grid_size', help='The size of the grid that all shapes will scale to.', required=False)
+    parser.add_argument('--rotate', help='Enable rotation.', action='store_true', required=False)
     parser.add_argument('--destroyDB', help='Destroy the database.', action='store_true', required=False)
     parser.add_argument('--verbose', help='Enable verbose mode.', action='store_true', required=False)
     parser.add_argument('--debug', help='Enable debug mode.', action='store_true', required=False)
     parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
     args = parser.parse_args()
-    
+
     stl_inputs = []
     for file in args.stl:
         if not file.name.endswith('.stl'):
@@ -98,27 +106,36 @@ def parseArgs():
     global NUM_OF_SLICES
     global NUM_OF_PEAKS
     global GRID_SIZE
+    global ROTATE
     global PRINT_COLLISIONS
-    
+
     DEBUG = args.debug
+    ROTATE = args.rotate
     VERBOSE = args.verbose
     PRINT_COLLISIONS = args.print_collisions
     if args.matches_num is not None:
         NUMBER_OF_MATCHES = int(args.matches_num)
-    
+
     if args.fanout is not None:
         FAN_VALUE = int(args.fanout)
 
     if args.slices is not None:
         NUM_OF_SLICES = int(args.slices)
-    
+
     if args.peaks_num is not None:
         NUM_OF_PEAKS = int(args.peaks_num)
-        
+
     if args.grid_size is not None:
         GRID_SIZE = int(args.grid_size)
-    
+
     return stl_inputs, args.mode, args.destroyDB
+
+'''
+Rotate the grid clockwise by 90 degrees
+'''
+def rot90(points_grid):
+    #rotated_points = copy.deepcopy(points_grid)
+    return np.rot90(points_grid, 1, (0,1))
 
 '''
 Sort the list for the given axis
@@ -175,4 +192,3 @@ def print_matches(mathes_dict):
         print()
     for match, accuracy in mathes_dict.items():
         print('\t' + match + '\t:\t' + str(round(accuracy, 3)))
-
