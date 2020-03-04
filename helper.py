@@ -1,10 +1,10 @@
 import os
 import argparse
-import numpy as np
 import heapq
+import copy
+import numpy as np
 from enum import Enum
 from colorama import Fore, Style
-import copy
 
 '''
 Debug flag.

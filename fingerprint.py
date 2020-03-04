@@ -85,7 +85,7 @@ def detect_peaks(grid):
 * Generate slices, apply FFT and generate the hashes for a given axis.
 * The three axes can be run in parallel.
 '''
-def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of_slices, fan_value, parallel_output, rotation):
+def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of_slices, fan_value, queue, rotation):
     # Find peaks
     maxima_list = slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rotation)
 
@@ -96,7 +96,7 @@ def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of
     signatures = generate_hashes(maxima_list, fan_value)
 
     # Add hashes to the results
-    parallel_output.put(signatures)
+    queue.put(signatures)
 
 
 '''
@@ -225,34 +225,30 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotati
     scaled_points_array = scale_points(points_array, helper.GRID_SIZE)
 
     # Find the signatures for each axis in parallel
-    parallel_output = mp.Queue()
+    queue = mp.Queue()
     processes = []
     for axis in helper.Axis:
-        p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, parallel_output, False))
+        p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, queue, False))
         processes.append(p)
-        if rotation:
-            p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, parallel_output, True))
-            processes.append(p)
-
-    for p in processes:
         p.start()
-
-    signatures = []
-    for p in processes:
-        p.join()
-        partial_results = parallel_output.get()
-        signatures += partial_results
+        if rotation:
+            p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, queue, True))
+            processes.append(p)
+            p.start()
 
     # Retrieve the signatures
-    # parallel_results = [parallel_output.get() for p in processes]
-    # signatures += parallel_results[0]
-    # signatures += parallel_results[1]
-    # signatures += parallel_results[2]
-    #
-    # if rotation:
-    #     signatures += parallel_results[3]
-    #     signatures += parallel_results[4]
-    #     signatures += parallel_results[5]
+    signatures = []
+    while 1:
+        running = any(p.is_alive() for p in processes)
+        while not queue.empty():
+            partial_results = queue.get()
+            signatures += partial_results
+        if not running:
+            break
+
+    # Join the processes
+    for p in processes:
+        p.join()
 
     helper.log('len(signatures): ' + str(len(signatures)))
 
