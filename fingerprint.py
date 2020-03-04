@@ -31,7 +31,30 @@ The number of peaks to keep after filtering out.
 '''
 DEFAULT_NUM_OF_PEAKS = 10
 
+'''
+Rotate shape by 90 degrees wrt a specified axis
+'''
+def rot90(points_grid):
+    rotated_points = copy.deepcopy(points_grid)
+    return np.rot90(rotated_points, 1, (0,1))
 
+'''
+Find the center of a circle given two points on opposite sides of the circle
+'''
+def circle_center(point_1, point_2):
+    center_x = (point_2.x - point_1.x)/2
+    center_y = (point_2.y - point_2.y)/2
+    return Point(center_x, center_y, 0.0)
+
+'''
+Find the diameter of a proscribing circle (largest range in axes)
+'''
+def circle_diameter(points_array):
+    max_1, min_1, range_1 = find_max_min_range(points_array, Axis.X)
+    max_2, min_2, range_2 = find_max_min_range(points_array, Axis.Y)
+    if (range_1 < range_2):
+        return range_2, circle_center(min_2, max_2)
+    return range_1, circle_center(min_1, max_1)
 '''
 Calculate the centroid of a triangle in 3D space
 '''
