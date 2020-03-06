@@ -14,7 +14,7 @@ import logging, sys
 '''
 The size of the grid that all shapes will scale to.
 '''
-GRID_SIZE = 100 # needed to make this smaller to accomodate 3D FFT
+GRID_SIZE = 1000
 
 '''
 Degree to which a fingerprint can be paired with its neighbors -- higher will cause more fingerprints, but potentially better accuracy.
@@ -171,14 +171,13 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, fft_d
 
         # Put points on the grid
         if (fft_dim == 3):
-            grid = np.zeros((GRID_SIZE, GRID_SIZE, GRID_SIZE))
+            grid = np.zeros((GRID_SIZE, GRID_SIZE, int(GRID_SIZE / num_of_slices)))
             for j in range(points_per_slice):
-
                 idx = (i * points_per_slice) + j
                 if (idx >= len(scaled_points_array)):
                     break
                 p = scaled_points_array[idx]
-                grid[p.x][p.y][p.z] = 1
+                grid[p.x][p.y][p.z % int(GRID_SIZE / num_of_slices)] = 1
 
             # 3D-FFT
             grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fftn(grid))
