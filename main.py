@@ -32,7 +32,7 @@ def main():
     for stl_file in tqdm(stl_files, ncols=100, bar_format='[{n_fmt}/{total_fmt}] {l_bar}{bar}|', disable=disable_tqdm):
 
         # generate fingerprint of the file
-        signatures = fingerprint.fingerprint(stl_file, helper.NUM_OF_SLICES, helper.NUM_OF_PEAKS, helper.FAN_VALUE, helper.ROTATE)
+        signatures = fingerprint.fingerprint(stl_file, helper.NUM_OF_SLICES, helper.NUM_OF_PEAKS, helper.FAN_VALUE, helper.ROTATE, helper.INTERP)
 
         # Add fingerprint to database
         if mode == 'learn':

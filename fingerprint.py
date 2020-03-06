@@ -15,7 +15,7 @@ from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 * Parse the points
 * Return array of 3D points
 '''
-def stl_to_points_array(fileName):
+def stl_to_points_array(fileName, interp):
     stl = open(fileName, "r")
     points_array = []
     triangle = []
@@ -33,9 +33,24 @@ def stl_to_points_array(fileName):
             in_triangle = False
             assert (points_count == 3)
             points_count = 0
-            # TODO: interpolate
             for p in triangle:
                 points_array.append(p)
+
+            if (interp):
+                # interpolate
+                prev_center = helper.Point(['vertex', -100000.0, -100000.0, -100000.0])
+                while (1):
+                    center = helper.tri_centroid([triangle[0], triangle[1], triangle[2]])
+                    point_1 = helper.tri_centroid([center, triangle[0], triangle[1]])
+                    point_2 = helper.tri_centroid([center, triangle[0], triangle[2]])
+                    point_3 = helper.tri_centroid([center, triangle[1], triangle[2]])
+                    triangle = [point_1, point_2, point_3]
+                    for p in triangle:
+                        points_array.append(copy.deepcopy(p))
+                    points_array.append(center)
+                    if (prev_center.x == center.x and prev_center.y == center.y and prev_center.z == center.z):
+                        break;
+                    prev_center = center
             triangle = []
     stl.close()
     return points_array
@@ -217,9 +232,9 @@ Generate the fingerprint of a STL file and store it in the hash table.
     num_of_peaks_to_keep: Number of peaks to keep after filtering the rest out
     fan_value           : Degree to which a fingerprint can be paired with its neighbors
 '''
-def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotation):
+def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotation, interp):
     # Parse STL and interpolate points
-    points_array = stl_to_points_array(stl_file)
+    points_array = stl_to_points_array(stl_file, interp)
 
     # Scale points
     scaled_points_array = scale_points(points_array, helper.GRID_SIZE)

@@ -47,6 +47,11 @@ Rotation flag.
 ROTATE = False
 
 '''
+Interp flag.
+'''
+INTERP = False
+
+'''
 Flag to print collisions within a single file.
 '''
 PRINT_COLLISIONS = False
@@ -65,6 +70,20 @@ class Point:
 
     def print_point(self):
         print(str(self.x) + ' \t ' + str(self.y) + ' \t ' + str(self.z))
+
+'''
+Find the center of a triangle
+'''
+def tri_centroid(triangle):
+    x = 0.0
+    y = 0.0
+    z = 0.0
+    for point in triangle:
+        x += point.x
+        y += point.y
+        z += point.z
+
+    return Point(['vertex', quantizer(x / 3), quantizer(y / 3), quantizer(z / 3)])
 
 def log(s):
     if DEBUG:
@@ -88,6 +107,7 @@ def parseArgs():
     parser.add_argument('--rotate', help='Enable rotation.', action='store_true', required=False)
     parser.add_argument('--destroyDB', help='Destroy the database.', action='store_true', required=False)
     parser.add_argument('--verbose', help='Enable verbose mode.', action='store_true', required=False)
+    parser.add_argument('--interp', help='Enable interpolation.', action='store_true', required=False)
     parser.add_argument('--debug', help='Enable debug mode.', action='store_true', required=False)
     parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
     args = parser.parse_args()
@@ -107,10 +127,12 @@ def parseArgs():
     global NUM_OF_PEAKS
     global GRID_SIZE
     global ROTATE
+    global INTERP
     global PRINT_COLLISIONS
 
     DEBUG = args.debug
     ROTATE = args.rotate
+    INTERP = args.interp
     VERBOSE = args.verbose
     PRINT_COLLISIONS = args.print_collisions
     if args.matches_num is not None:
@@ -179,11 +201,9 @@ def nth_largest(n, lst):
         return None
     return heapq.nlargest(n, lst)[-1]
 
-
 def quantizer(num, accuracy=0.02):
     factor = 1.0 / accuracy
     return round(num*factor)/factor
-
 
 def print_matches(mathes_dict):
     if len(mathes_dict) == 0:
