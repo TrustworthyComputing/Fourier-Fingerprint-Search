@@ -85,7 +85,7 @@ def detect_peaks(grid):
 * Generate slices, apply FFT and generate the hashes for a given axis.
 * The three axes can be run in parallel.
 '''
-def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of_slices, fan_value, queue, rotation):
+def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of_slices, fan_value, signatures_queue, neighborhood_dict, rotation):
     # Find peaks
     maxima_list = slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rotation)
 
@@ -93,10 +93,14 @@ def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of
     helper.log('\nlen(maxima_list_' + str(axis) + '): ' + str(len(maxima_list)))
 
     # Generate hashes
-    signatures = generate_hashes(maxima_list, fan_value)
+    signatures, neighborhood = generate_hashes(maxima_list, axis, fan_value)
 
+    # print(neighborhood)
+    # print()
     # Add hashes to the results
-    queue.put(signatures)
+    signatures_queue.put(signatures)
+
+    neighborhood_dict.update(neighborhood)
 
 
 '''
@@ -189,12 +193,23 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rotat
 
 '''
 Generate Hashes: returns a list of sha1 digests and anchor slice numbers
+
+anchor_id : (anchor_fx, anchor_fy, slice_num)
+neighborhood: { anchor_id : [ hashes ] }
+signatures: [ (hashes, slice_num) ]
 '''
-def generate_hashes(peaks_list, fan_value):
+def generate_hashes(peaks_list, axis, fan_value):
+    neighborhood = {}
     signatures = []
     # Use each point as an anchor
     for i in range(len(peaks_list) - fan_value):
         anchor = peaks_list[i]
+        slice_num = anchor[2]
+        
+        # Maybe also put axis in the key
+        anchor_id = (anchor[0], anchor[1], slice_num, axis.value)
+        neighborhood[anchor_id] = []
+        
         # For the next fan_value points
         for j in range(i + 1, min(i + 1 + fan_value, len(peaks_list))):
             # Generate signatue
@@ -204,10 +219,10 @@ def generate_hashes(peaks_list, fan_value):
             sha = hashlib.sha1()
             sha.update(hash_input.encode())
             # append signature to the fingerprint of the file
-            key = sha.digest()
-            slice_num = anchor[2]
-            signatures.append( (key, slice_num) )
-    return signatures
+            h = sha.digest()
+            signatures.append( (h, slice_num) )
+            neighborhood[anchor_id].append(h)
+    return signatures, neighborhood
 
 
 '''
@@ -225,14 +240,16 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotati
     scaled_points_array = scale_points(points_array, helper.GRID_SIZE)
 
     # Find the signatures for each axis in parallel
-    queue = mp.Queue()
+    signatures_queue = mp.Queue()
+    manager = mp.Manager()
+    neighborhood_dict = manager.dict()
     processes = []
     for axis in helper.Axis:
-        p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, queue, False))
+        p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, signatures_queue, neighborhood_dict, False))
         processes.append(p)
         p.start()
         if rotation:
-            p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, queue, True))
+            p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, signatures_queue, neighborhood_dict, True))
             processes.append(p)
             p.start()
 
@@ -240,8 +257,8 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotati
     signatures = []
     while 1:
         running = any(p.is_alive() for p in processes)
-        while not queue.empty():
-            partial_results = queue.get()
+        while not signatures_queue.empty():
+            partial_results = signatures_queue.get()
             signatures += partial_results
         if not running:
             break
@@ -250,7 +267,12 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotati
     for p in processes:
         p.join()
 
+    neighborhoods = neighborhood_dict
     helper.log('len(signatures): ' + str(len(signatures)))
+    helper.log('len(neighborhoods): ' + str(len(neighborhoods)))
+
+    # print(neighborhoods)
+    # print()
 
     if len(signatures) == 0:
         print()
@@ -258,4 +280,4 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotati
         exit(-1)
 
     # Return the list of hashes
-    return signatures
+    return signatures, neighborhoods

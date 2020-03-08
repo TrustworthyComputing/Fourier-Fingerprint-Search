@@ -51,6 +51,11 @@ Flag to print collisions within a single file.
 '''
 PRINT_COLLISIONS = False
 
+'''
+Number of bytes of the hash output
+'''
+HASH_DIGEST_SIZE = 20
+
 
 class Axis(Enum):
     X = 1

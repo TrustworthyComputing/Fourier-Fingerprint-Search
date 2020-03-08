@@ -12,7 +12,7 @@ def main():
         database.destroyDatabase('./avocado_db')
 
     # open (or create) database
-    db = database.openDatabase('./avocado_db')
+    db, signatures_db, neighbors_db, sig_to_nbr_db = database.openDatabase('./avocado_db')
 
     if helper.VERBOSE:
         print('Generating fingerprint of', stl_files, 'with:',
@@ -32,15 +32,15 @@ def main():
     for stl_file in tqdm(stl_files, ncols=100, bar_format='[{n_fmt}/{total_fmt}] {l_bar}{bar}|', disable=disable_tqdm):
 
         # generate fingerprint of the file
-        signatures = fingerprint.fingerprint(stl_file, helper.NUM_OF_SLICES, helper.NUM_OF_PEAKS, helper.FAN_VALUE, helper.ROTATE)
+        signatures, neighborhoods = fingerprint.fingerprint(stl_file, helper.NUM_OF_SLICES, helper.NUM_OF_PEAKS, helper.FAN_VALUE, helper.ROTATE)
 
         # Add fingerprint to database
         if mode == 'learn':
-            database.addSignaturesToDB(db, signatures, stl_file)
+            database.addSignaturesToDB(signatures_db, neighbors_db, sig_to_nbr_db, signatures, neighborhoods, stl_file)
 
         # Search in database for potential matches
         else: # mode == 'search':
-            unique_matches, collision_matches = database.searchSignaturesInDB(db, signatures)
+            unique_matches, collision_matches = database.searchSignaturesInDB(signatures_db, signatures)
             print('\nFiles matched with ' + stl_file + ' : ', end='')
             helper.print_matches(unique_matches)
             if helper.PRINT_COLLISIONS:
