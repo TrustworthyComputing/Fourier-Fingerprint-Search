@@ -10,18 +10,20 @@ import mpl_toolkits.mplot3d.art3d as art3d
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1, projection='3d')
 
-# blue hex colors: #00a3f0 #008ed1 #0078b1
-p = Circle((50, 50), 30, color='#758a72', fill=True)
-ax.add_patch(p)
-art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
+# blue hex colors: #14b4ff #008ed1 #076794
+# green hex colors: #b8d6b4 #a2bd9f #758a72
 
-p = Circle((50, 50), 40, color='#a2bd9f', fill=True)
+p = Circle((50, 50), 30, color='#14b4ff', fill=True)
+ax.add_patch(p)
+art3d.pathpatch_2d_to_3d(p, z=100, zdir="z")
+
+p = Circle((50, 50), 40, color='#008ed1', fill=True)
 ax.add_patch(p)
 art3d.pathpatch_2d_to_3d(p, z=50, zdir="z")
 
-p = Circle((50, 50), 30, color='#b8d6b4', fill=True)
+p = Circle((50, 50), 30, color='#076794', fill=True)
 ax.add_patch(p)
-art3d.pathpatch_2d_to_3d(p, z=100, zdir="z")
+art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
 
 ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
 ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
