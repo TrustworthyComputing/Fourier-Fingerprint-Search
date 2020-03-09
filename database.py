@@ -1,147 +1,107 @@
+import os
 import helper
-import plyvel
+import dataset
 import hashlib
+
 
 '''
 Open database_name database. Create it if does not exist. 
 '''
 def openDatabase(database_name):
-    db = plyvel.DB(database_name, create_if_missing=True)
-    signatures_db = db.prefixed_db(b'sig')
-    neighbors_db = db.prefixed_db(b'nbr')
-    sig_to_nbr_db = db.prefixed_db(b'sit_nbr')
-    return db, signatures_db, neighbors_db, sig_to_nbr_db
-
-
-'''
-Close database.
-'''
-def closeDatabase(db):
-    db.close()
+    db = dataset.connect('sqlite:///' + database_name)
+    return db
 
 
 '''
 Delete database_name database.
 '''
 def destroyDatabase(database_name):
-    plyvel.destroy_db(database_name)
+    try:
+        os.remove(database_name)
+    except:
+        helper.error('Error while deleting directory ' + database_name)
 
 
 '''
 Add list of signatures to database.
 
-* signatures_db   : < signature_hash  : [ slice_no, filename ] >
-* neighbors_db    : < anchor_hash     : [ signature_hash_from_same_anchor ] >
-* sig_to_nbr_db   : < signature_hash  : [ anchor_hash ] >
+Signatures Table:
+[id, signature hash, filename, anchor hash]
+['id', 'sig', 'fname', 'anch']
 '''
-def addSignaturesToDB(signatures_db, neighbors_db, sig_to_nbr_db, signatures, neighborhoods, filename):
-    # Add the neighborhoods to DB
+def addSignaturesToDB(db, neighborhoods, filename):
+    signatures_table = db['signatures']
+    
+    # For each anchor
     for anchor, hashes_lst in neighborhoods.items():
-        # Compute the SHA1 hash of the anchor 
+        # Compute the SHA1 hash of the anchor based on the signatures it contains
         sha = hashlib.sha1()
         for hash in hashes_lst:
             sha.update(hash)
         anchor_hash = sha.digest()
 
-        # Add < signature_hash : anchor_hash > pairs to sig_to_nbr_db
+        # Add all the signature hashes in DB along with the anchor_hash
         for hash in hashes_lst:
-            # Check for collisions
-            anchors = sig_to_nbr_db.get(hash)
-            if anchors is None:
-                sig_to_nbr_db.put(hash, anchor_hash)
-            else:
-                # Split bytestream to hashes array 
-                anchors_lst = [ anchors[i * helper.HASH_DIGEST_SIZE:(i + 1) * helper.HASH_DIGEST_SIZE] for i in range((len(anchors) + helper.HASH_DIGEST_SIZE - 1) // helper.HASH_DIGEST_SIZE ) ]
-                # Check if this anchor already exists for this signature
-                already_exists = False
-                for a in anchors_lst:
-                    if a == anchor_hash:
-                        already_exists = True
-                        break
-                if already_exists:
-                    continue # to the next signature
-                sig_to_nbr_db.put(hash, anchors + anchor_hash)
+            # signatures_table.insert(dict(sig=hash, fname=filename, anch=anchor_hash))
+            signatures_table.upsert(dict(sig=hash, fname=filename, anch=anchor_hash), ['sig', 'fname', 'anch'])
         
         # helper.log(str(anchor) + ' --> ' + str(len(hashes_lst)))
-
-        # Store neighborhood
-        hashes_lst_byte_str = ''.encode().join(hashes_lst)
-        neighbors_db.put(anchor_hash, hashes_lst_byte_str)
-
-
-    # Add the signatures
-    for sig in signatures:
-        hash = sig[0]
-        slice_no = str(sig[1])
-        new_value = slice_no + ' ' + filename
-        
-        # Check if the hash exist and append them
-        prev_values = signatures_db.get(hash)
-        
-        # If this is the first occurence of this hash
-        if prev_values is None:
-            signatures_db.put(hash, anchor_hash + new_value.encode())
-        
-        # If we have seen this hash previously, check if it's from a different file
-        else:
-            # Get the list of [ slice_no_1, filename_1, slice_no_2, filename_2, ... ]
-            prev_values = prev_values.decode("utf-8").split()
-            already_exists = False
-            for prev_slice, prev_fname in zip(prev_values[::2], prev_values[1::2]):
-                if prev_fname == filename and prev_slice == slice_no:
-                    already_exists = True
-                    break
-            if already_exists:
-                continue # to the next signature
-            prev_values.append(slice_no)
-            prev_values.append(filename)
-            str_value = ' '.join([str(el) for el in prev_values])
-            signatures_db.put(sig[0], str_value.encode())
-        
+    
 
 '''
-Search in database given a list of signatures. Return top NUMBER_OF_MATCHES mathced files.
+Search in database given a list of signatures. 
+Consider a matched anchor if at least two of the hashes of the same neighborhood match. 
+Return top NUMBER_OF_MATCHES mathced files.
 '''
-def searchSignaturesInDB(db, signatures):
+def searchSignaturesInDB(db, signatures, neighborhoods):
+    signatures_table = db['signatures']
+    
+    # dict of < matched_files : < anchor : [ hash ] > >
     matched_files = {}
-    similarity = 0
-    i = 0
+    
+    # for each signature
     for sig in signatures:
-        hash = sig[0]
-        val = db.get(hash)
-        if val is None:
-            continue
-
-        # Get the list of [ slice_no_1, filename_1, slice_no_2, filename_2, ... ]
-        val = val.decode("utf-8").split()
-        for slice_no, filename in zip(val[::2], val[1::2]):
-
+        sig = sig[0]
+        
+        all_records = signatures_table.find(sig=sig)
+        
+        # For each record that has the same signature hash
+        for rec in all_records:
+            # Retrieve filename and anchor fields
+            filename = rec['fname']
+            anchor_hash = rec['anch']
+        
             # If this is the first hash for that filename create a new inner dict
             if filename not in matched_files:
                 matched_files[filename] = {}
-                matched_files[filename]['total'] = 1
 
             # Count occurences
-            if hash not in matched_files[filename]:
-                matched_files[filename][hash] = 1
-            else:
-                matched_files[filename][hash] += 1
-            matched_files[filename]['total'] += 1
+            if anchor_hash not in matched_files[filename]:
+                matched_files[filename][anchor_hash] = []
+                matched_files[filename]['anchors_matched'] = 0
+            matched_files[filename][anchor_hash].append(sig)
 
+    # Check how many neighborhoods matched
+    for filename, anchors in matched_files.items():
+        # for each anchor and the hashes in its neighborhood
+        for anch, sigs in anchors.items():
+            # Skip the counter
+            if anch == 'anchors_matched':
+                continue
+            
+            if len(sigs) >= helper.MIN_SIGNATURES_TO_MATCH:
+                matched_files[filename]['anchors_matched'] += 1
+    
+    # Find Top K matches
+    best_matches = {}
+    total_possible_matches = len(neighborhoods)
+    for filename, anchors in matched_files.items():
+        best_matches[filename] = anchors['anchors_matched'] / total_possible_matches
     # Bring first the files that have the most unique matches
-    unique_matches_sorted = sorted(matched_files.items(), key=lambda x: len(x[1]), reverse=True)
-    with_collisions_matches_sorted = sorted(matched_files.items(), key=lambda x: x[1]['total'], reverse=True)
-    '''
-    unique_matches_sorted = [
-        ('file_a', {'h1': 5, 'h4': 5, 'h3': 5, 'h2': 5, 'h6': 5}),
-        ('file_b', {'h8': 5})
-    ]
-    '''
-    unique_matches = {}
-    collision_matches = {}
-    for i in range(min(helper.NUMBER_OF_MATCHES, len(unique_matches_sorted))):
-        unique_matches[unique_matches_sorted[i][0]] = (len(unique_matches_sorted[i][1]) - 1) / len(signatures)
-        collision_matches[with_collisions_matches_sorted[i][0]] = with_collisions_matches_sorted[i][1]['total'] / len(signatures)
-        
-    return unique_matches, collision_matches
+    best_matches = sorted(best_matches.items(), key=lambda x: x[1], reverse=True)
+    top_k_best_matches = {}
+    for i in range(min(helper.NUMBER_OF_MATCHES, len(best_matches))):
+        top_k_best_matches[best_matches[i][0]] = best_matches[i][1]
+    
+    return top_k_best_matches
 

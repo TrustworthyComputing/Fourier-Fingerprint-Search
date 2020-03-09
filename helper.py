@@ -56,6 +56,11 @@ Number of bytes of the hash output
 '''
 HASH_DIGEST_SIZE = 20
 
+'''
+The minimum number of signatures to match to consider a neighborhood similar.
+'''
+MIN_SIGNATURES_TO_MATCH = 2
+
 
 class Axis(Enum):
     X = 1
