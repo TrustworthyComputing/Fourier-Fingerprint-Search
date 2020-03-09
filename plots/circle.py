@@ -10,6 +10,7 @@ import mpl_toolkits.mplot3d.art3d as art3d
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1, projection='3d')
 
+# blue hex colors: #00a3f0 #008ed1 #0078b1
 p = Circle((50, 50), 30, color='#758a72', fill=True)
 ax.add_patch(p)
 art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
