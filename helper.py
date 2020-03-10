@@ -58,11 +58,18 @@ PRINT_COLLISIONS = False
 
 
 class Axis(Enum):
+    '''
+    A class to represent the three axes.
+    '''
     X = 1
     Y = 2
     Z = 3
 
+
 class Point:
+    '''
+    A class to store points.
+    '''
     def __init__(self, token):
         self.x = float(token[1])
         self.y = float(token[2])
@@ -71,10 +78,10 @@ class Point:
     def print_point(self):
         print(str(self.x) + ' \t ' + str(self.y) + ' \t ' + str(self.z))
 
-'''
-Find the center of a triangle
-'''
 def tri_centroid(triangle):
+    '''
+    Find the center of a triangle
+    '''
     x = 0.0
     y = 0.0
     z = 0.0
@@ -85,17 +92,26 @@ def tri_centroid(triangle):
 
     return Point(['vertex', quantizer(x / 3), quantizer(y / 3), quantizer(z / 3)])
 
+
 def log(s):
+    '''
+    If DEBUG flag is specified, print log messages.
+    '''
     if DEBUG:
         print(Fore.YELLOW + str(s) + Style.RESET_ALL)
 
+
 def error(s):
+    '''
+    Print red the error messages.
+    '''
     print(Fore.RED + str(s) + Style.RESET_ALL)
 
-'''
-Parse arguments and perform checks.
-'''
+
 def parseArgs():
+    '''
+    Parse arguments and perform checks.
+    '''
     parser = argparse.ArgumentParser(description='STL compression')
     parser.add_argument('--stl', help='Path to STL files (.stl).', type=argparse.FileType('r'), nargs='+', required=True)
     parser.add_argument('--mode', type=str.lower, choices=['learn', 'search'], help='Learn (l) or Search (s) mode.', required=True)
@@ -118,7 +134,6 @@ def parseArgs():
             error('STL file should end with .stl extension: ' + file.name)
             exit(-1)
         stl_inputs.append(file.name)
-
     global DEBUG
     global VERBOSE
     global NUMBER_OF_MATCHES
@@ -137,32 +152,29 @@ def parseArgs():
     PRINT_COLLISIONS = args.print_collisions
     if args.matches_num is not None:
         NUMBER_OF_MATCHES = int(args.matches_num)
-
     if args.fanout is not None:
         FAN_VALUE = int(args.fanout)
-
     if args.slices is not None:
         NUM_OF_SLICES = int(args.slices)
-
     if args.peaks_num is not None:
         NUM_OF_PEAKS = int(args.peaks_num)
-
     if args.grid_size is not None:
         GRID_SIZE = int(args.grid_size)
-
     return stl_inputs, args.mode, args.destroyDB
 
-'''
-Rotate the grid clockwise by 90 degrees
-'''
+
 def rot90(points_grid):
+    '''
+    Rotate the grid clockwise by 90 degrees
+    '''
     #rotated_points = copy.deepcopy(points_grid)
     return np.rot90(points_grid, 1, (0,1))
 
-'''
-Sort the list for the given axis
-'''
+
 def sort_by_axis(axis, points):
+    '''
+    Sort the list for the given axis
+    '''
     if axis == Axis.X:
         return sorted(points, key=lambda point: point.x)
     elif axis == Axis.Y:
@@ -172,10 +184,11 @@ def sort_by_axis(axis, points):
     else:
         print('No such axis.')
 
-'''
-Find min, max and range for the given axis
-'''
+
 def find_max_min_range(points_array, axis):
+    '''
+    Find min, max and range for the given axis
+    '''
     if axis == Axis.X:
         max_x = max(p.x for p in points_array)
         min_x = min(p.x for p in points_array)
@@ -193,17 +206,19 @@ def find_max_min_range(points_array, axis):
         return max_z, min_z, range_z
 
 
-'''
-Return the nth largest of a list
-'''
 def nth_largest(n, lst):
+    '''
+    Return the nth largest of a list
+    '''
     if len(lst) == 0:
         return None
     return heapq.nlargest(n, lst)[-1]
 
+
 def quantizer(num, accuracy=0.02):
     factor = 1.0 / accuracy
     return round(num*factor)/factor
+
 
 def print_matches(mathes_dict):
     if len(mathes_dict) == 0:
