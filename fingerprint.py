@@ -10,12 +10,12 @@ from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 
 
-def stl_to_points_array(fileName, interp):
+def stl_to_points_array(filename, interp):
     '''
-    Open fileName STL file, parse the points and return an array of 3D points.
+    Open filename STL file, parse the points and return an array of 3D points.
     If interp flag is true, use interpolation to add more points. 
     '''
-    stl = open(fileName, "r")
+    stl = open(filename, "r")
     points_array = []
     triangle = []
     points_count = 0

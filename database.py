@@ -1,5 +1,6 @@
 import helper as _hp
 import plyvel
+import hashlib
 
 
 class Database:
@@ -28,6 +29,9 @@ class Database:
         '''
         self.database_name = database_name
         self.db = plyvel.DB(database_name, create_if_missing=True)
+        # Generate 2 prefixed databases
+        self.filenames_db = self.db.prefixed_db(b'filenames')
+        self.signatures_db = self.db.prefixed_db(b'signatures')
 
 
     def close_db(self):
@@ -41,28 +45,35 @@ class Database:
         '''
         Add list of signatures to database. Each signature points to a list of filenames. Refer to schema.
         '''
+        # Generate SHA1 hash of filename
+        sha = hashlib.sha1()
+        sha.update(filename.encode())
+        filename_hash = sha.digest()
+        # Store filename hash in the filenames prefixed database
+        self.filenames_db.put(filename_hash, filename.encode())
         # Iterate over all signatures of the file
         for _, hashes_lst in neighborhoods.items():
             for sig in hashes_lst:
                 # Check if the hash exist and append them
-                prev_values = self.db.get(sig)
+                filehashes_lst = self.signatures_db.get(sig)
                 # If this is the first occurence of this hash
-                if prev_values is None:
-                    self.db.put(sig, filename.encode())
+                if filehashes_lst is None:
+                    self.signatures_db.put(sig, filename_hash)
                 # If we have seen this hash previously, check if it's from a different file
                 else:
-                    # Get the list of filenames
-                    prev_values = prev_values.decode("utf-8").split()
+                    # Get the list of filenames. Split by HASH_DIGEST_SIZE bytes.
+                    filehashes_lst = [ filehashes_lst[i * _hp.HASH_DIGEST_SIZE:(i + 1) * _hp.HASH_DIGEST_SIZE] for i in range((len(filehashes_lst) + _hp.HASH_DIGEST_SIZE - 1) // _hp.HASH_DIGEST_SIZE ) ]
+
                     already_exists = False
-                    for prev_fname in prev_values:
-                        if prev_fname == filename:
+                    for fh in filehashes_lst:
+                        if fh == filename_hash:
                             already_exists = True
                             break    
                     if already_exists:
                         continue # to the next signature
-                    prev_values.append(filename)
-                    str_value = ' '.join([str(el) for el in prev_values])
-                    self.db.put(sig, str_value.encode())
+                    filehashes_lst.append(filename_hash)
+                    str_value = ''.join([str(el) for el in filehashes_lst])
+                    self.signatures_db.put(sig, str_value.encode())
 
 
     def search_signatures(self, neighborhoods):
@@ -74,12 +85,14 @@ class Database:
         # Iterate over all signatures of the file
         for _, hashes_lst in neighborhoods.items():
             for sig in hashes_lst:
-                val = self.db.get(sig)
-                if val is None:
+                filehashes_lst = self.signatures_db.get(sig)
+                if filehashes_lst is None:
                     continue
-                # Get the list of filenames
-                val = val.decode("utf-8").split()
-                for filename in val:
+                # Get the list of filenames. Split by HASH_DIGEST_SIZE bytes.
+                filehashes_lst = [ filehashes_lst[i * _hp.HASH_DIGEST_SIZE:(i + 1) * _hp.HASH_DIGEST_SIZE] for i in range((len(filehashes_lst) + _hp.HASH_DIGEST_SIZE - 1) // _hp.HASH_DIGEST_SIZE ) ]
+                
+                for filename_hash in filehashes_lst:
+                    filename = self.filenames_db.get(filename_hash).decode("utf-8")
                     # If this is the first hash for that filename create a new inner dict
                     if filename not in matched_files:
                         matched_files[filename] = {}
