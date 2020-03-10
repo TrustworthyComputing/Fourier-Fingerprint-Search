@@ -221,7 +221,8 @@ def generate_hashes(peaks_list, fan_value):
             # append signature to the fingerprint of the file
             key = sha.digest()
             slice_num = anchor[2]
-            signatures.append( (key, slice_num) )
+            # signatures.append( (key, slice_num) )
+            signatures.append(key)
     return signatures
 
 

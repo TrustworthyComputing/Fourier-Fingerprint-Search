@@ -9,10 +9,10 @@ def main():
 
     # Delete database if the flag is set
     if destroyDB:
-        database.destroyDatabase('./avocado_db')
-
-    # open (or create) database
-    db = database.openDatabase('./avocado_db')
+        database.destroy_db('./avocado_db')
+    
+    # Open (or create) database
+    db = database.Database('./avocado_db')
 
     if helper.VERBOSE:
         print('Generating fingerprint of', stl_files, 'with:',
@@ -36,11 +36,11 @@ def main():
 
         # Add fingerprint to database
         if mode == 'learn':
-            database.addSignaturesToDB(db, signatures, stl_file)
+            db.add_signatures(signatures, stl_file)
 
         # Search in database for potential matches
         else: # mode == 'search':
-            unique_matches, collision_matches = database.searchSignaturesInDB(db, signatures)
+            unique_matches, collision_matches = db.search_signatures(signatures)
             print('\nFiles matched with ' + stl_file + ' : ', end='')
             helper.print_matches(unique_matches)
             if helper.PRINT_COLLISIONS:
@@ -50,7 +50,7 @@ def main():
             print()
 
     # close the database
-    database.closeDatabase(db)
+    db.close_db()
 
 
 if __name__ == "__main__":
