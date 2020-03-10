@@ -1,4 +1,4 @@
-import helper
+import helper as _hp
 import plyvel
 
 
@@ -12,6 +12,13 @@ class Database:
     +-------------------+-------------------+
     | signature_hash    | [ file_name ]     |
     +-------------------+-------------------+
+    
+    Neighborhoods:
+    +-----------+-------------------------------+
+    | Key       | Value                         |
+    +-----------+-------------------------------+
+    | Anchor_id | [ signature_from_anchor_id ]  |
+    +-----------+-------------------------------+
     '''
     
 
@@ -30,71 +37,68 @@ class Database:
         self.db.close()
 
 
-    def add_signatures(self, signatures, filename):
+    def add_signatures(self, neighborhoods, filename):
         '''
         Add list of signatures to database. Each signature points to a list of filenames. Refer to schema.
         '''
-        for sig in signatures:
-            # Check if the hash exist and append them
-            prev_values = self.db.get(sig)
-            # If this is the first occurence of this hash
-            if prev_values is None:
-                self.db.put(sig, filename.encode())
-            # If we have seen this hash previously, check if it's from a different file
-            else:
-                # Get the list of filenames
-                prev_values = prev_values.decode("utf-8").split()
-                already_exists = False
-                for prev_fname in prev_values:
-                    if prev_fname == filename:
-                        already_exists = True
-                        break    
-                if already_exists:
-                    continue # to the next signature
-                prev_values.append(filename)
-                str_value = ' '.join([str(el) for el in prev_values])
-                self.db.put(sig, str_value.encode())
+        # Iterate over all signatures of the file
+        for _, hashes_lst in neighborhoods.items():
+            for sig in hashes_lst:
+                # Check if the hash exist and append them
+                prev_values = self.db.get(sig)
+                # If this is the first occurence of this hash
+                if prev_values is None:
+                    self.db.put(sig, filename.encode())
+                # If we have seen this hash previously, check if it's from a different file
+                else:
+                    # Get the list of filenames
+                    prev_values = prev_values.decode("utf-8").split()
+                    already_exists = False
+                    for prev_fname in prev_values:
+                        if prev_fname == filename:
+                            already_exists = True
+                            break    
+                    if already_exists:
+                        continue # to the next signature
+                    prev_values.append(filename)
+                    str_value = ' '.join([str(el) for el in prev_values])
+                    self.db.put(sig, str_value.encode())
 
 
-    def search_signatures(self, signatures):
+    def search_signatures(self, neighborhoods):
         '''
         Search in database given a list of signatures. Return top NUMBER_OF_MATCHES mathced files.
         '''
         matched_files = {}
-        similarity = 0
-        i = 0
-        for sig in signatures:
-            val = self.db.get(sig)
-            if val is None:
-                continue
-            # Get the list of filenames
-            val = val.decode("utf-8").split()
-            for filename in val:
-                # If this is the first hash for that filename create a new inner dict
-                if filename not in matched_files:
-                    matched_files[filename] = {}
-                    matched_files[filename]['total'] = 1
-                # Count occurences
-                if sig not in matched_files[filename]:
-                    matched_files[filename][sig] = 1
-                else:
-                    matched_files[filename][sig] += 1
-                matched_files[filename]['total'] += 1
-
+        total_signatures = 0
+        # Iterate over all signatures of the file
+        for _, hashes_lst in neighborhoods.items():
+            for sig in hashes_lst:
+                val = self.db.get(sig)
+                if val is None:
+                    continue
+                # Get the list of filenames
+                val = val.decode("utf-8").split()
+                for filename in val:
+                    # If this is the first hash for that filename create a new inner dict
+                    if filename not in matched_files:
+                        matched_files[filename] = {}
+                        matched_files[filename]['total'] = 1
+                    # Count occurences
+                    if sig not in matched_files[filename]:
+                        matched_files[filename][sig] = 1
+                    else:
+                        matched_files[filename][sig] += 1
+                    matched_files[filename]['total'] += 1
+                total_signatures += 1
         # Bring first the files that have the most unique matches
         unique_matches_sorted = sorted(matched_files.items(), key=lambda x: len(x[1]), reverse=True)
         with_collisions_matches_sorted = sorted(matched_files.items(), key=lambda x: x[1]['total'], reverse=True)
-        '''
-        unique_matches_sorted = [
-            ('file_a', {'h1': 5, 'h4': 5, 'h3': 5, 'h2': 5, 'h6': 5}),
-            ('file_b', {'h8': 5})
-        ]
-        '''
         unique_matches = {}
         collision_matches = {}
-        for i in range(min(helper.NUMBER_OF_MATCHES, len(unique_matches_sorted))):
-            unique_matches[unique_matches_sorted[i][0]] = (len(unique_matches_sorted[i][1]) - 1) / len(signatures)
-            collision_matches[with_collisions_matches_sorted[i][0]] = with_collisions_matches_sorted[i][1]['total'] / len(signatures)
+        for i in range(min(_hp.NUMBER_OF_MATCHES, len(unique_matches_sorted))):
+            unique_matches[unique_matches_sorted[i][0]] = (len(unique_matches_sorted[i][1]) - 1) / total_signatures
+            collision_matches[with_collisions_matches_sorted[i][0]] = with_collisions_matches_sorted[i][1]['total'] / total_signatures
         return unique_matches, collision_matches
 
 
