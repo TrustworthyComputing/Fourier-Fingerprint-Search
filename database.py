@@ -8,11 +8,25 @@ class Database:
     Key-Value storage.
     
     Schema:
-    +-------------------+-------------------+
-    | Key               | Value             |
-    +-------------------+-------------------+
-    | signature_hash    | [ file_name ]     |
-    +-------------------+-------------------+
+    1) Signatures DB:
+        +-------------------+-------------------+
+        | Key               | Value             |
+        +-------------------+-------------------+
+        | signature_hash    | [ file_name ]     |
+        +-------------------+-------------------+
+    2) Anchors DB:
+        +-------------------+-------------------+
+        | Key               | Value             |
+        +-------------------+-------------------+
+        | signature_hash    | [ anchor_hash ]   |
+        +-------------------+-------------------+
+    3) Filenames DB: 
+        // maybe change the key to filecontents hash
+        +-------------------+-------------------+
+        | Key               | Value             |
+        +-------------------+-------------------+
+        | filename_hash     | file_name         |
+        +-------------------+-------------------+
     
     Neighborhoods:
     +-----------+-------------------------------+
@@ -29,9 +43,10 @@ class Database:
         '''
         self.database_name = database_name
         self.db = plyvel.DB(database_name, create_if_missing=True)
-        # Generate 2 prefixed databases
-        self.filenames_db = self.db.prefixed_db(b'filenames')
+        # Generate prefixed databases
         self.signatures_db = self.db.prefixed_db(b'signatures')
+        self.anchors_db = self.db.prefixed_db(b'anchors')
+        self.filenames_db = self.db.prefixed_db(b'filenames')
 
 
     def close_db(self):
@@ -46,34 +61,23 @@ class Database:
         Add list of signatures to database. Each signature points to a list of filenames. Refer to schema.
         '''
         # Generate SHA1 hash of filename
-        sha = hashlib.sha1()
-        sha.update(filename.encode())
-        filename_hash = sha.digest()
+        filename_hash = _hp.sha1_hash(filename.encode())
         # Store filename hash in the filenames prefixed database
         self.filenames_db.put(filename_hash, filename.encode())
         # Iterate over all signatures of the file
         for _, hashes_lst in neighborhoods.items():
+            # Compute the anchor hash based on the signatures it has
+            anchor_hash = _hp.sha1_hash_lst(hashes_lst)
             for sig in hashes_lst:
-                # Check if the hash exist and append them
+                # Get the list of filename hashes
                 filehashes_lst = self.signatures_db.get(sig)
                 # If this is the first occurence of this hash
                 if filehashes_lst is None:
                     self.signatures_db.put(sig, filename_hash)
-                # If we have seen this hash previously, check if it's from a different file
-                else:
-                    # Get the list of filenames. Split by HASH_DIGEST_SIZE bytes.
-                    filehashes_lst = [ filehashes_lst[i * _hp.HASH_DIGEST_SIZE:(i + 1) * _hp.HASH_DIGEST_SIZE] for i in range((len(filehashes_lst) + _hp.HASH_DIGEST_SIZE - 1) // _hp.HASH_DIGEST_SIZE ) ]
-
-                    already_exists = False
-                    for fh in filehashes_lst:
-                        if fh == filename_hash:
-                            already_exists = True
-                            break    
-                    if already_exists:
-                        continue # to the next signature
-                    filehashes_lst.append(filename_hash)
-                    str_value = ''.join([str(el) for el in filehashes_lst])
-                    self.signatures_db.put(sig, str_value.encode())
+                    self.anchors_db.put(sig, anchor_hash)
+                else: # If we have seen this hash previously, check if it's from a different file
+                    self.signatures_db.put(sig, filehashes_lst+filename_hash)
+                    self.anchors_db.put(sig, self.anchors_db.get(sig) + anchor_hash)
 
 
     def search_signatures(self, neighborhoods):
@@ -88,31 +92,53 @@ class Database:
                 filehashes_lst = self.signatures_db.get(sig)
                 if filehashes_lst is None:
                     continue
+                anchor_hashes_lst = self.anchors_db.get(sig)
                 # Get the list of filenames. Split by HASH_DIGEST_SIZE bytes.
                 filehashes_lst = [ filehashes_lst[i * _hp.HASH_DIGEST_SIZE:(i + 1) * _hp.HASH_DIGEST_SIZE] for i in range((len(filehashes_lst) + _hp.HASH_DIGEST_SIZE - 1) // _hp.HASH_DIGEST_SIZE ) ]
-                
-                for filename_hash in filehashes_lst:
+                # Get the list of anchor hashes that . Split by HASH_DIGEST_SIZE bytes.
+                anchor_hashes_lst = [ anchor_hashes_lst[i * _hp.HASH_DIGEST_SIZE:(i + 1) * _hp.HASH_DIGEST_SIZE] for i in range((len(anchor_hashes_lst) + _hp.HASH_DIGEST_SIZE - 1) // _hp.HASH_DIGEST_SIZE ) ]
+                # for filename_hash in filehashes_lst:
+                for i in range(len(filehashes_lst)):
+                    filename_hash = filehashes_lst[i]
                     filename = self.filenames_db.get(filename_hash).decode("utf-8")
+                    anchor_hash = anchor_hashes_lst[i]
                     # If this is the first hash for that filename create a new inner dict
                     if filename not in matched_files:
                         matched_files[filename] = {}
                         matched_files[filename]['total'] = 1
                     # Count occurences
-                    if sig not in matched_files[filename]:
-                        matched_files[filename][sig] = 1
-                    else:
-                        matched_files[filename][sig] += 1
+                    if anchor_hash not in matched_files[filename]:
+                        matched_files[filename][anchor_hash] = []
+                        matched_files[filename]['anchors_matched'] = 0
+                    matched_files[filename][anchor_hash].append(sig)
                     matched_files[filename]['total'] += 1
                 total_signatures += 1
-        # Bring first the files that have the most unique matches
-        unique_matches_sorted = sorted(matched_files.items(), key=lambda x: len(x[1]), reverse=True)
-        with_collisions_matches_sorted = sorted(matched_files.items(), key=lambda x: x[1]['total'], reverse=True)
-        unique_matches = {}
-        collision_matches = {}
-        for i in range(min(_hp.NUMBER_OF_MATCHES, len(unique_matches_sorted))):
-            unique_matches[unique_matches_sorted[i][0]] = (len(unique_matches_sorted[i][1]) - 1) / total_signatures
-            collision_matches[with_collisions_matches_sorted[i][0]] = with_collisions_matches_sorted[i][1]['total'] / total_signatures
-        return unique_matches, collision_matches
+        # Check how many signatures and neighborhoods matched
+        anchor_matches = {}
+        signatures_matches = {}
+        signatures_with_collisions_matches = {}
+        signatures_dict = {}
+        for filename, anchors in matched_files.items():
+            signatures_dict[filename] = {}
+            signatures_dict[filename]['total'] = matched_files[filename]['total']
+            # for each anchor and the hashes in its neighborhood
+            for anch, sigs in anchors.items():
+                # Skip the counters
+                if anch == 'anchors_matched' or anch == 'total':
+                    continue
+                if len(sigs) >= _hp.MIN_SIGNATURES_TO_MATCH:
+                    matched_files[filename]['anchors_matched'] += 1
+                for s in sigs:
+                    signatures_dict[filename][s] = 1
+            anchor_matches[filename] = anchors['anchors_matched'] / len(neighborhoods)
+            signatures_matches[filename] = (len(signatures_dict[filename]) - 2) / total_signatures
+            signatures_with_collisions_matches[filename] = signatures_dict[filename]['total'] / total_signatures
+        # Find top-K matches with 2 different criteria.
+        anchor_matches = sorted(anchor_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
+        signatures_matches = sorted(signatures_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
+        signatures_with_collisions_matches = sorted(signatures_with_collisions_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
+        # return lists of tuples
+        return anchor_matches, signatures_matches, signatures_with_collisions_matches
 
 
 def destroy_db(database_name):

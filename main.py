@@ -16,11 +16,14 @@ def main():
 
     if _hp.VERBOSE:
         print('Generating fingerprint of', stl_files, 'with:',
-        '\n\tNumber of matches :', str(_hp.NUMBER_OF_MATCHES),
+        '\n\tNumber of matches to return :', str(_hp.NUMBER_OF_MATCHES),
         '\n\tFan value :', str(_hp.FAN_VALUE),
         '\n\tNumber of slices :', str(_hp.NUM_OF_SLICES),
         '\n\tNumber of peaks :', str(_hp.NUM_OF_PEAKS),
         '\n\tGrid size :', str(_hp.GRID_SIZE),
+        '\n\tRotate flag :', str(_hp.ROTATE),
+        '\n\tInterpolation flag :', str(_hp.INTERP),
+        '\n\tMin number of signatures to match within a neighborhood :', str(_hp.MIN_SIGNATURES_TO_MATCH),
         '\n')
 
     # Disable progress bar if only one
@@ -38,12 +41,17 @@ def main():
             db.add_signatures(neighborhoods, stl_file)
         # Search in database for potential matches
         else: # mode == 'search':
-            unique_matches, collision_matches = db.search_signatures(neighborhoods)
-            print('\nFiles matched with ' + stl_file + ' : ', end='')
-            _hp.print_matches(unique_matches)
+            anchor_matches, signatures_matches, signatures_with_collisions_matches = db.search_signatures(neighborhoods)
+            
+            print('\nFiles matched with ' + stl_file + ' using the number of signatures : ', end='')
+            _hp.print_lst_of_tuples(signatures_matches)
+            
+            if _hp.PRINT_ANCHORS:
+                print('\nFiles matched with ' + stl_file + ' using the number of neighborhoods (min number of signatures to match a neighborhood : ', end='')
+                _hp.print_lst_of_tuples(anchor_matches)
             if _hp.PRINT_COLLISIONS:
-                print('\nFiles matched with ' + stl_file + ' with collisions : ', end='')
-                _hp.print_matches(collision_matches)
+                print('\nFiles matched with ' + stl_file + ' using the number of signatures (including collisions) : ', end='')
+                _hp.print_lst_of_tuples(signatures_with_collisions_matches)
                 print()
             print()
 

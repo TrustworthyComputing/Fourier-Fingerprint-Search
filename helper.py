@@ -2,6 +2,7 @@ import os
 import argparse
 import heapq
 import copy
+import hashlib
 import numpy as np
 from enum import Enum
 from colorama import Fore, Style
@@ -52,9 +53,19 @@ Interp flag.
 INTERP = False
 
 '''
-Flag to print collisions within a single file.
+Flag to print accuracy including collisions.
 '''
 PRINT_COLLISIONS = False
+
+'''
+Flag to print accuracy using the neighborhoods approach.
+'''
+PRINT_ANCHORS = False
+
+'''
+Min number of signatures to match within a neighborhood.
+'''
+MIN_SIGNATURES_TO_MATCH = 2
 
 '''
 Number of bytes of the hash output
@@ -130,6 +141,7 @@ def parseArgs():
     parser.add_argument('--verbose', help='Enable verbose mode.', action='store_true', required=False)
     parser.add_argument('--interp', help='Enable interpolation.', action='store_true', required=False)
     parser.add_argument('--debug', help='Enable debug mode.', action='store_true', required=False)
+    parser.add_argument('--print_anchors', help='Print matches using the neighborhood approach.', action='store_true', required=False)
     parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
     args = parser.parse_args()
 
@@ -149,12 +161,14 @@ def parseArgs():
     global ROTATE
     global INTERP
     global PRINT_COLLISIONS
+    global PRINT_ANCHORS
 
     DEBUG = args.debug
     ROTATE = args.rotate
     INTERP = args.interp
     VERBOSE = args.verbose
     PRINT_COLLISIONS = args.print_collisions
+    PRINT_ANCHORS = args.print_anchors
     if args.matches_num is not None:
         NUMBER_OF_MATCHES = int(args.matches_num)
     if args.fanout is not None:
@@ -211,6 +225,19 @@ def find_max_min_range(points_array, axis):
         return max_z, min_z, range_z
 
 
+def sha1_hash(bytes):
+    sha = hashlib.sha1()
+    sha.update(bytes)
+    return sha.digest()
+
+
+def sha1_hash_lst(byte_lst):
+    sha = hashlib.sha1()
+    for l in byte_lst:
+        sha.update(l)
+    return sha.digest()
+
+
 def nth_largest(n, lst):
     '''
     Return the nth largest of a list
@@ -225,10 +252,12 @@ def quantizer(num, accuracy=0.02):
     return round(num*factor)/factor
 
 
-def print_matches(mathes_dict):
-    if len(mathes_dict) == 0:
+def print_lst_of_tuples(lst):
+    if len(lst) == 0:
         print('0')
     else:
         print()
-    for match, accuracy in mathes_dict.items():
+    for l in lst:
+        match = l[0]
+        accuracy = l[1]
         print('\t' + match + '\t:\t' + str(round(accuracy, 3)))

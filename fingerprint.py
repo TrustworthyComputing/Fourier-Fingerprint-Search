@@ -197,9 +197,7 @@ def generate_hashes(peaks_list, axis, fan_value):
             target = peaks_list[j]
             dist_wrt_z = target[2] - anchor[2]
             hash_input = str(anchor[0]) + str(anchor[1]) + str(target[0]) + str(target[1]) + str(dist_wrt_z)
-            sha = hashlib.sha1()
-            sha.update(hash_input.encode())
-            h = sha.digest()
+            h = _hp.sha1_hash(hash_input.encode())
             # append signature to the fingerprint of the file
             neighborhood[anchor_id].append(h)
     return neighborhood
