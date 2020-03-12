@@ -127,7 +127,7 @@ def error(s):
 
 def file_or_dir_path(filepath):
     '''
-    Check if a path is a directory
+    Check if a path is a file or a directory
     '''
     if os.path.isfile(filepath) or os.path.isdir(filepath):
         return filepath
@@ -165,7 +165,6 @@ def parseArgs():
     '''
     parser = argparse.ArgumentParser(description='STL compression')
     parser.add_argument('--stl', help='Path to STL files (.stl) or directory.', type=file_or_dir_path, nargs='+', required=True)
-    # parser.add_argument('--stl', help='Path to STL files (.stl) or directory.', type=argparse.FileType('r'), nargs='+', required=True)
     parser.add_argument('--mode', type=str.lower, choices=['learn', 'search'], help='Learn (l) or Search (s) mode.', required=True)
     parser.add_argument('--matches_num', help='Maximum number of matches to return.', required=False)
     parser.add_argument('--slices', help='Number of slices.', required=False)
