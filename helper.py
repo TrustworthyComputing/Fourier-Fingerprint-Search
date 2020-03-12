@@ -5,6 +5,7 @@ import copy
 import hashlib
 import numpy as np
 from enum import Enum
+from glob import glob
 from colorama import Fore, Style
 
 '''
@@ -121,7 +122,41 @@ def error(s):
     '''
     Print red the error messages.
     '''
-    print(Fore.RED + str(s) + Style.RESET_ALL)
+    print(Fore.RED + '> ' + str(s) + Style.RESET_ALL)
+
+
+def file_or_dir_path(filepath):
+    '''
+    Check if a path is a directory
+    '''
+    if os.path.isfile(filepath) or os.path.isdir(filepath):
+        return filepath
+    else:
+        raise NotAFileOrDirectoryError(filepath)
+
+
+def is_stl(filepath):
+    '''
+    Check if a given file ends with .stl (or .STL) extension
+    '''
+    ends_with_stl = filepath.endswith('.stl') or filepath.endswith('.STL')
+    if not ends_with_stl:
+        error('Omitting file ' + filepath + '. Does not end with .stl extension.')
+        return False
+    return True
+
+
+def is_binary(filepath):
+    '''
+    Check if a given file is binary or ASCII
+    '''
+    try: # Try open file in text mode. If fail then file is non-text (binary)
+        with open(filepath, 'tr') as check_file:
+            check_file.read()
+            return False
+    except:
+        error('Omitting file ' + filepath + '. It is a binary STL.')
+        return True
 
 
 def parseArgs():
@@ -129,7 +164,8 @@ def parseArgs():
     Parse arguments and perform checks.
     '''
     parser = argparse.ArgumentParser(description='STL compression')
-    parser.add_argument('--stl', help='Path to STL files (.stl).', type=argparse.FileType('r'), nargs='+', required=True)
+    parser.add_argument('--stl', help='Path to STL files (.stl) or directory.', type=file_or_dir_path, nargs='+', required=True)
+    # parser.add_argument('--stl', help='Path to STL files (.stl) or directory.', type=argparse.FileType('r'), nargs='+', required=True)
     parser.add_argument('--mode', type=str.lower, choices=['learn', 'search'], help='Learn (l) or Search (s) mode.', required=True)
     parser.add_argument('--matches_num', help='Maximum number of matches to return.', required=False)
     parser.add_argument('--slices', help='Number of slices.', required=False)
@@ -144,13 +180,19 @@ def parseArgs():
     parser.add_argument('--print_anchors', help='Print matches using the neighborhood approach.', action='store_true', required=False)
     parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
     args = parser.parse_args()
-
+    
+    # Get list of files recursively
     stl_inputs = []
-    for file in args.stl:
-        if not file.name.endswith('.stl'):
-            error('STL file should end with .stl extension: ' + file.name)
-            exit(-1)
-        stl_inputs.append(file.name)
+    for filepath in args.stl:
+        # if it is a dir, get files recursively
+        if os.path.isdir(filepath):
+            stl_inputs += [f for f in glob(filepath + '/**', recursive=True) if os.path.isfile(f)]
+        # if it is a file, append it to the list of files
+        else:
+            stl_inputs.append(filepath)
+    # Check that all files end with .stl
+    stl_inputs = [filepath for filepath in stl_inputs if is_stl(filepath) and not is_binary(filepath)]
+        
     global DEBUG
     global VERBOSE
     global NUMBER_OF_MATCHES
@@ -226,12 +268,18 @@ def find_max_min_range(points_array, axis):
 
 
 def sha1_hash(bytes):
+    '''
+    Compute the SHA-1 hash of a byte stream. 
+    '''
     sha = hashlib.sha1()
     sha.update(bytes)
     return sha.digest()
 
 
 def sha1_hash_lst(byte_lst):
+    '''
+    Compute the SHA-1 hash of a list with byte streams.
+    '''
     sha = hashlib.sha1()
     for l in byte_lst:
         sha.update(l)
