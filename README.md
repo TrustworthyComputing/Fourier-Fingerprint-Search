@@ -1,4 +1,4 @@
-# CAD to Audio [![License MIT][badge-license]](LICENSE)
+# Enabling Search for 3D CAD Models [![License MIT][badge-license]](LICENSE) [![Python 3.7][badge-python3]]((https://www.python.org/))
 
 ## Signature Generation of STL files
 
@@ -24,11 +24,6 @@
     * The signatures become the key to our hash table.
     * Value is a tuple of (chunk_i, STL_ID). chunk_i identifies the chunk this frequency appeared in the STL_ID design.
 
-
-## Installation
-```
-pip install -r requirements.txt
-```
 
 
 ## STereoLithography (STL) Files 
@@ -63,11 +58,33 @@ endsolid OpenSCAD_Model
 
 
 
-## Visualize STL files with [OpenSCAD](https://www.openscad.org/):
+#### Convert binary STL files to ASCII and back
+
+Our framework works with ASCII STL files. Using [NumPy-STL](https://pypi.org/project/numpy-stl/) (`pip3 install numpy-stl`) we can convert binary STLs to ASCII and back.
+
+Convert binary STL to ASCII:
+```
+$ stl2ascii ./stl_files/boat.stl ./stl_files/boat-ascii.stl
+```
+
+Convert ASCII STL to binary:
+```
+$ stl2bin ./stl_files/boat-ascii.stl ./stl_files/boat.stl
+```
+
+
+#### Visualize STL files with [OpenSCAD](https://www.openscad.org/):
 
 ```
-import("absolute-path-to-repo/cad-to-audio/3d-models/boat-ascii.stl");
+import("absolute-path-to-repo/cad-to-audio/stl_files/boat-ascii.stl");
 ```
+
+
+## Installation
+```
+pip3 install -r requirements.txt
+```
+
 
 
 ### ![alt text][twc-logo] An open-source project by Trustworthy Computing Group
@@ -75,3 +92,4 @@ import("absolute-path-to-repo/cad-to-audio/3d-models/boat-ascii.stl");
 [twc-logo]: ./logos/twc.png
 
 [badge-license]: https://img.shields.io/badge/license-MIT-green.svg?style=flat-square
+[badge-python3]: https://img.shields.io/badge/python-3.7-blue.svg?style=flat-square
