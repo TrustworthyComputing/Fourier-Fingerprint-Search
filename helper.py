@@ -227,7 +227,6 @@ def rot90(points_grid):
     '''
     Rotate the grid clockwise by 90 degrees
     '''
-    #rotated_points = copy.deepcopy(points_grid)
     return np.rot90(points_grid, 1, (0,1))
 
 

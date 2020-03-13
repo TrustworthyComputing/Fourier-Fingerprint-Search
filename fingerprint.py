@@ -90,23 +90,23 @@ def detect_peaks(grid):
     return detected_peaks
 
 
-def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of_slices, fan_value, neighborhood_dict, rotation):
+def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of_slices, fan_value, neighborhood_dict, rot90_times):
     '''
     Generate slices, apply FFT and generate the hashes for a given axis.
     The three axes can be run in parallel.
     The return value (signatures list) is added to a synchronized queue.
     '''
     # Find peaks
-    maxima_list = slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rotation)
+    maxima_list = slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90_times)
     # If debug, log the peaks list length
     _hp.log('\nlen(maxima_list_' + str(axis) + '): ' + str(len(maxima_list)))
     # Generate hashes
     neighborhood = generate_hashes(maxima_list, axis, fan_value)
     # Add hashes to the results
     neighborhood_dict.update(neighborhood)
-    
 
-def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rotation):
+
+def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90_times):
     '''
     Slice the array of points, calculate FFT and find the peaks.
     Return a list of peaks.
@@ -126,56 +126,31 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rotat
             p = scaled_points_array[idx]
             grid[p.x][p.y] = 1
         # If rotation flag is passed rotate three times for each axis
-        if rotation:
-            for r in range(3):
-                grid = _hp.rot90(grid)
-                # FTT
-                grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
-                # Find peaks
-                detected_peaks = detect_peaks(grid_fft)
-                magnitudes = grid_fft[detected_peaks]
-                j_arr, i_arr = np.where(detected_peaks)
-                # Find minimum magnitude with respect to the number of peaks to keep
-                min_magnitude = _hp.nth_largest(num_of_peaks_to_keep, magnitudes)
-                # If a slice does not have any peaks, continue
-                if min_magnitude is None:
-                    continue
-                # filter peaks
-                magnitudes = magnitudes.flatten()
-                peaks = zip(i_arr, j_arr, magnitudes)
-                peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
-                # get indices for frequency x and frequency y
-                frequency_x_idx = []
-                frequency_y_idx = []
-                for x in peaks_filtered:
-                    frequency_x_idx.append(x[1])
-                    frequency_y_idx.append(x[0])
-                local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
-                maxima_list += local_maxima
-        else:
-            # FTT
-            grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
-            # Find peaks
-            detected_peaks = detect_peaks(grid_fft)
-            magnitudes = grid_fft[detected_peaks]
-            j_arr, i_arr = np.where(detected_peaks)
-            # Find minimum magnitude with respect to the number of peaks to keep
-            min_magnitude = _hp.nth_largest(num_of_peaks_to_keep, magnitudes)
-            # If a slice does not have any peaks, continue
-            if min_magnitude is None:
-                continue
-            # filter peaks
-            magnitudes = magnitudes.flatten()
-            peaks = zip(i_arr, j_arr, magnitudes)
-            peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
-            # get indices for frequency x and frequency y
-            frequency_x_idx = []
-            frequency_y_idx = []
-            for x in peaks_filtered:
-                frequency_x_idx.append(x[1])
-                frequency_y_idx.append(x[0])
-            local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
-            maxima_list += local_maxima
+        for r in range(rot90_times):
+            grid = _hp.rot90(grid)
+        # FTT
+        grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
+        # Find peaks
+        detected_peaks = detect_peaks(grid_fft)
+        magnitudes = grid_fft[detected_peaks]
+        j_arr, i_arr = np.where(detected_peaks)
+        # Find minimum magnitude with respect to the number of peaks to keep
+        min_magnitude = _hp.nth_largest(num_of_peaks_to_keep, magnitudes)
+        # If a slice does not have any peaks, continue
+        if min_magnitude is None:
+            continue
+        # filter peaks
+        magnitudes = magnitudes.flatten()
+        peaks = zip(i_arr, j_arr, magnitudes)
+        peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
+        # get indices for frequency x and frequency y
+        frequency_x_idx = []
+        frequency_y_idx = []
+        for x in peaks_filtered:
+            frequency_x_idx.append(x[1])
+            frequency_y_idx.append(x[0])
+        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
+        maxima_list += local_maxima
     return maxima_list
 
 
@@ -219,13 +194,14 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotati
     neighborhood_dict = mp.Manager().dict()
     processes = []
     for axis in _hp.Axis:
-        p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, neighborhood_dict, False))
-        processes.append(p)
-        p.start()
+        total_rotations = 1
         if rotation:
-            p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, neighborhood_dict, True))
+            total_rotations = 4
+        for rot90_times in range(total_rotations):
+            p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, neighborhood_dict, rot90_times))
             processes.append(p)
             p.start()
+
     # Join the processes
     for p in processes:
         p.join()
@@ -234,6 +210,6 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotati
     if len(neighborhoods) == 0:
         print()
         _hp.error('No signatures generated. Try either decreasing the fan-value or increasing the number of slices.')
-        exit(-1)
+        # exit(-1)
     # Return the list of hashes
     return neighborhoods
