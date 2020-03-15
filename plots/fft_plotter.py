@@ -32,5 +32,5 @@ ax.set_zticklabels([])
 
 # plt.show()
 
-plt.savefig('fft.eps', format='eps', transparent=True)
+plt.savefig('../images/fft.eps', format='eps', transparent=True)
 

@@ -38,4 +38,4 @@ ax.set_yticklabels([])
 ax.set_zticklabels([])
 
 # plt.show()
-plt.savefig('slices.eps', format='eps', transparent=True)
+plt.savefig('../images/slices.eps', format='eps', transparent=True)

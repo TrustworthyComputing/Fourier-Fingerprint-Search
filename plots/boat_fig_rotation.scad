@@ -44,7 +44,7 @@ translate([120,0,0]) {
 translate([-120,0,80]) {
     rotate([0,0,0]) 
     color([0, 0.55, 0.81])
-    import("/home/jimouris/Downloads/3d_models/boat.stl");
+    import("/home/jimouris/repos/cad-to-audio/stl_files/boat.stl");
 
     color([0.7, 0.7, 0.7 ,0.4])  {
         rotate([0,90,0]) translate([-20,0,-30]) {
@@ -59,7 +59,7 @@ translate([-40,0,80]) {
     rotate([45,0,0]) 
     translate([0,15,-10])
     color([0, 0.55, 0.81])
-    import("/home/jimouris/Downloads/3d_models/boat.stl");
+    import("/home/jimouris/repos/cad-to-audio/stl_files/boat.stl");
 
     color([0.7, 0.7, 0.7 ,0.4])  {
         rotate([0,90,0]) translate([-20,0,-30]) {
@@ -74,7 +74,7 @@ translate([40,0,80]) {
     rotate([90,0,0]) 
     translate([0,20,-20])
     color([0, 0.55, 0.81])
-    import("/home/jimouris/Downloads/3d_models/boat.stl");
+    import("/home/jimouris/repos/cad-to-audio/stl_files/boat.stl");
 
     color([0.7, 0.7, 0.7 ,0.4])  {
         rotate([0,90,0]) translate([-20,0,-30]) {
@@ -89,7 +89,7 @@ translate([120,0,80]) {
     rotate([135,0,0]) 
     translate([0,15,-35])
     color([0, 0.55, 0.81])
-    import("/home/jimouris/Downloads/3d_models/boat.stl");
+    import("/home/jimouris/repos/cad-to-audio/stl_files/boat.stl");
 
     color([0.7, 0.7, 0.7 ,0.4])  {
         rotate([0,90,0]) translate([-20,0,-30]) {
@@ -105,7 +105,7 @@ translate([120,0,80]) {
 // Below
 translate([-120,0,-80]) {
    color([0, 0.55, 0.81])
-   import("/home/jimouris/Downloads/3d_models/boat.stl");
+   import("/home/jimouris/repos/cad-to-audio/stl_files/boat.stl");
 
    color([0.7, 0.7, 0.7 ,0.4])  {
        rotate([90,0,0]) translate([0,20,-18]) {
@@ -120,7 +120,7 @@ translate([-40,0,-80]) {
    rotate([0,45,0]) 
    translate([-12,0,-5])
    color([0, 0.55, 0.81])
-   import("/home/jimouris/Downloads/3d_models/boat.stl");
+   import("/home/jimouris/repos/cad-to-audio/stl_files/boat.stl");
 
    color([0.7, 0.7, 0.7 ,0.4])  {
        rotate([90,0,0]) translate([0,20,-18]) {
@@ -135,7 +135,7 @@ translate([40,0,-80]) {
    rotate([0,90,0]) 
    translate([-20,0,-20])
    color([0, 0.55, 0.81])
-   import("/home/jimouris/Downloads/3d_models/boat.stl");
+   import("/home/jimouris/repos/cad-to-audio/stl_files/boat.stl");
 
    color([0.7, 0.7, 0.7 ,0.4])  {
        rotate([90,0,0]) translate([0,20,-18]) {
@@ -150,7 +150,7 @@ translate([120,0,-80]) {
    rotate([0,135,0]) 
    translate([-15,0,-30])
    color([0, 0.55, 0.81])
-   import("/home/jimouris/Downloads/3d_models/boat.stl");
+   import("/home/jimouris/repos/cad-to-audio/stl_files/boat.stl");
 
    color([0.7, 0.7, 0.7 ,0.4])  {
        rotate([90,0,0]) translate([0,20,-18]) {

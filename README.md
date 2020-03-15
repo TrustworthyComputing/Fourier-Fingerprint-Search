@@ -89,7 +89,7 @@ pip3 install -r requirements.txt
 
 ### ![alt text][twc-logo] An open-source project by Trustworthy Computing Group
 
-[twc-logo]: ./logos/twc.png
+[twc-logo]: ./images/twc.png
 
 [badge-license]: https://img.shields.io/badge/license-MIT-green.svg?style=flat-square
 [badge-python3]: https://img.shields.io/badge/python-3.7-blue.svg?style=flat-square
