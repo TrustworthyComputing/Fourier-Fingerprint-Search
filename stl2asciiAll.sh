@@ -6,9 +6,12 @@ for fullfile in $1/* ; do
     filename_no_ext="${filename%.*}"
     basedirectory="${fullfile%$filename}"
 
-    echo $filename
-    # echo $filename_no_ext
-    # echo $basedirectory
-    # echo $basedirectory$filename_no_ext"-ascii.stl"
+    if [ "$extension" != "stl" ]; then
+        echo $fullfile" is not STL, skipping..."
+        continue
+    else
+        echo "Converting "$fullfile" to ASCII."
+    fi
     stl2ascii $fullfile $basedirectory$filename_no_ext"-ascii.stl"
+    rm -f $fullfile
 done
