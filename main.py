@@ -42,13 +42,14 @@ def main():
         # Search in database for potential matches
         else: # mode == 'search':
             anchor_matches, signatures_matches, signatures_with_collisions_matches = db.search_signatures(neighborhoods)
-            
-            print('\nFiles matched with ' + stl_file + ' using the number of signatures : ', end='')
-            _hp.print_lst_of_tuples(signatures_matches)
-            
-            if _hp.PRINT_ANCHORS:
-                print('\nFiles matched with ' + stl_file + ' using the number of neighborhoods (min number of signatures to match a neighborhood : ', end='')
+
+            if _hp.NEIGHBORHOODS:
+                print('\nFiles matched with ' + stl_file + ' using the number of neighborhoods : ', end='')
                 _hp.print_lst_of_tuples(anchor_matches)
+            else:
+                print('\nFiles matched with ' + stl_file + ' using the number of signatures : ', end='')
+                _hp.print_lst_of_tuples(signatures_matches)
+                            
             if _hp.PRINT_COLLISIONS:
                 print('\nFiles matched with ' + stl_file + ' using the number of signatures (including collisions) : ', end='')
                 _hp.print_lst_of_tuples(signatures_with_collisions_matches)

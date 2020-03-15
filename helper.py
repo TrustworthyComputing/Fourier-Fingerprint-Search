@@ -61,7 +61,7 @@ PRINT_COLLISIONS = False
 '''
 Flag to print accuracy using the neighborhoods approach.
 '''
-PRINT_ANCHORS = False
+NEIGHBORHOODS = False
 
 '''
 Min number of signatures to match within a neighborhood.
@@ -176,7 +176,7 @@ def parseArgs():
     parser.add_argument('--verbose', help='Enable verbose mode.', action='store_true', required=False)
     parser.add_argument('--interp', help='Enable interpolation.', action='store_true', required=False)
     parser.add_argument('--debug', help='Enable debug mode.', action='store_true', required=False)
-    parser.add_argument('--print_anchors', help='Print matches using the neighborhood approach.', action='store_true', required=False)
+    parser.add_argument('--neighborhoods', help='Print matches using the neighborhood approach.', action='store_true', required=False)
     parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
     args = parser.parse_args()
     
@@ -202,14 +202,14 @@ def parseArgs():
     global ROTATE
     global INTERP
     global PRINT_COLLISIONS
-    global PRINT_ANCHORS
+    global NEIGHBORHOODS
 
     DEBUG = args.debug
     ROTATE = args.rotate
     INTERP = args.interp
     VERBOSE = args.verbose
     PRINT_COLLISIONS = args.print_collisions
-    PRINT_ANCHORS = args.print_anchors
+    NEIGHBORHOODS = args.neighborhoods
     if args.matches_num is not None:
         NUMBER_OF_MATCHES = int(args.matches_num)
     if args.fanout is not None:
