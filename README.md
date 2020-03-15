@@ -1,6 +1,8 @@
 # Enabling Search for 3D CAD Models [![License MIT][badge-license]](LICENSE) [![Python 3.7][badge-python3]]((https://www.python.org/))
 
-## Signature Generation of STL files
+## Fingerprint Generation Overview
+
+![alt text][overview]
 
 1. Map vertices of STL triangles on a 3D plane. 
     * Scale objects to fit in a grid of a predefined size.
@@ -90,6 +92,7 @@ pip3 install -r requirements.txt
 ### ![alt text][twc-logo] An open-source project by Trustworthy Computing Group
 
 [twc-logo]: ./images/twc.png
+[overview]: ./images/overview.png
 
 [badge-license]: https://img.shields.io/badge/license-MIT-green.svg?style=flat-square
 [badge-python3]: https://img.shields.io/badge/python-3.7-blue.svg?style=flat-square
