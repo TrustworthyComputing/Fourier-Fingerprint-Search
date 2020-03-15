@@ -124,7 +124,9 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90
             if (idx >= len(scaled_points_array)):
                 break
             p = scaled_points_array[idx]
-            grid[p.x][p.y] = 1
+            px, py = p.get_adjacent_axis_data(axis)
+            grid[px][py] = 1
+            
         # If rotation flag is passed rotate three times for each axis
         for r in range(rot90_times):
             grid = _hp.rot90(grid)

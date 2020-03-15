@@ -91,6 +91,14 @@ class Point:
         self.x = float(token[1])
         self.y = float(token[2])
         self.z = float(token[3])
+        
+    def get_adjacent_axis_data(self, axis):
+        if axis == Axis.X:
+            return self.y, self.z
+        elif axis == Axis.Y:
+            return self.x, self.z
+        else:
+            return self.x, self.y
 
     def print_point(self):
         print(str(self.x) + ' \t ' + str(self.y) + ' \t ' + str(self.z))

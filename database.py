@@ -128,7 +128,6 @@ class Database:
                     continue
                 if len(sigs) >= _hp.MIN_SIGNATURES_TO_MATCH:
                     matched_files[filename]['anchors_matched'] += 1
-                _hp.log(filename + ' ' + str(len(sigs)))
                 for s in sigs:
                     signatures_dict[filename][s] = 1
             anchor_matches[filename] = anchors['anchors_matched'] / len(neighborhoods)
@@ -139,9 +138,6 @@ class Database:
         signatures_matches = sorted(signatures_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
         signatures_with_collisions_matches = sorted(signatures_with_collisions_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
         # return lists of tuples
-        
-        _hp.log('neighborhoods len : ' + str(len(neighborhoods)))
-        
         return anchor_matches, signatures_matches, signatures_with_collisions_matches
 
 
