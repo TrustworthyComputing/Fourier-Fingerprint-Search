@@ -177,6 +177,7 @@ def parseArgs():
     parser.add_argument('--interp', help='Enable interpolation.', action='store_true', required=False)
     parser.add_argument('--debug', help='Enable debug mode.', action='store_true', required=False)
     parser.add_argument('--neighborhoods', help='Print matches using the neighborhood approach.', action='store_true', required=False)
+    parser.add_argument('--sigs_in_neighborhood', help='Minimum number of signatures to match within a neighborhood.', required=False)
     parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
     args = parser.parse_args()
     
@@ -203,6 +204,7 @@ def parseArgs():
     global INTERP
     global PRINT_COLLISIONS
     global NEIGHBORHOODS
+    global MIN_SIGNATURES_TO_MATCH
 
     DEBUG = args.debug
     ROTATE = args.rotate
@@ -220,6 +222,10 @@ def parseArgs():
         NUM_OF_PEAKS = int(args.peaks_num)
     if args.grid_size is not None:
         GRID_SIZE = int(args.grid_size)
+    if args.sigs_in_neighborhood is not None:
+        NEIGHBORHOODS = True
+        MIN_SIGNATURES_TO_MATCH = int(args.sigs_in_neighborhood)
+        
     return stl_inputs, args.mode, args.destroyDB
 
 
