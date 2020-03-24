@@ -79,6 +79,10 @@ Number of bytes of the hash output
 '''
 HASH_DIGEST_SIZE = 20
 
+'''
+Export STL matches as PNGs.
+'''
+EXPORT_PNGS = False
 
 class Axis(Enum):
     '''
@@ -235,6 +239,7 @@ def parseArgs():
     parser.add_argument('--neighborhoods', help='Print matches using the neighborhood approach.', action='store_true', required=False)
     parser.add_argument('--sigs_in_neighborhood', help='Minimum number of signatures to match within a neighborhood.', required=False)
     parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
+    parser.add_argument('--export_png', help='Export PNG images for the matches.', action='store_true', required=False)
     args = parser.parse_args()
 
     # Get list of files recursively
@@ -262,11 +267,13 @@ def parseArgs():
     global PRINT_COLLISIONS
     global NEIGHBORHOODS
     global MIN_SIGNATURES_TO_MATCH
+    global EXPORT_PNGS
 
     DEBUG = args.debug
     ROTATE = args.rotate
     INTERP = args.interp
     VERBOSE = args.verbose
+    EXPORT_PNGS = args.export_png
     PRINT_COLLISIONS = args.print_collisions
     NEIGHBORHOODS = args.neighborhoods
     if args.matches_num is not None:
@@ -372,6 +379,15 @@ def print_lst_of_tuples(lst):
         match = l[0]
         accuracy = l[1]
         print('\t' + match + '\t:\t' + str(round(accuracy, 3)))
+
+def export_pngs(lst):
+    for file in lst:
+        print('Exporting ' + file[:-4] + '.png')
+        os.system('openscad -o ' + file[:-4] + '.png -D \'model="' + file +
+                    '"; col=[0, 0.55, 0.81]\' --autocenter --viewall ' +
+                    '--colorscheme Nature --imgsize 3000,3000 ./open_stl.scad'
+                )
+        print()
 
 def normalize(lst):
     max_elem = max(lst,key=lambda item:item[1])[1]

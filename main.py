@@ -1,6 +1,7 @@
 import helper as _hp
 import database as _db
 import fingerprint as _fp
+import os
 from tqdm import tqdm
 
 def main():
@@ -44,22 +45,24 @@ def main():
         else: # mode == 'search':
             anchor_matches, signatures_matches, signatures_with_collisions_matches = db.search_signatures(neighborhoods)
 
+            matches = None
             if _hp.NEIGHBORHOODS:
                 print('\nFiles matched with ' + stl_file + ' using the number of neighborhoods : ', end='')
-                _hp.print_lst_of_tuples(anchor_matches)
+                matches = anchor_matches
+            elif _hp.PRINT_COLLISIONS:
+                print('\nFiles matched with ' + stl_file + ' using the number of signatures (including collisions) : ', end='')
+                matches = signatures_with_collisions_matches
             else:
                 print('\nFiles matched with ' + stl_file + ' using the number of signatures : ', end='')
-                _hp.print_lst_of_tuples(signatures_matches)
+                matches = signatures_matches
 
-            if _hp.PRINT_COLLISIONS:
-                print('\nFiles matched with ' + stl_file + ' using the number of signatures (including collisions) : ', end='')
-                _hp.print_lst_of_tuples(signatures_with_collisions_matches)
-                print()
+            _hp.print_lst_of_tuples(matches)
             print()
+            if _hp.EXPORT_PNGS:
+                _hp.export_pngs([i[0] for i in matches])
 
     # Close the database
     db.close_db()
-
 
 if __name__ == "__main__":
     main()
