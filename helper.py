@@ -3,6 +3,7 @@ import argparse
 import heapq
 import copy
 import hashlib
+import math
 import numpy as np
 from enum import Enum
 from glob import glob
@@ -49,6 +50,11 @@ Rotation flag.
 ROTATE = False
 
 '''
+Degree increments to rotate.
+'''
+STAR_ROTATE = 0
+
+'''
 Interp flag.
 '''
 INTERP = False
@@ -91,7 +97,7 @@ class Point:
         self.x = float(token[1])
         self.y = float(token[2])
         self.z = float(token[3])
-        
+
     def get_adjacent_axis_data(self, axis):
         if axis == Axis.X:
             return self.y, self.z
@@ -100,8 +106,49 @@ class Point:
         else:
             return self.x, self.y
 
+    def get_star_rot_axis_data(self, axis):
+        if axis == Axis.X:
+            return self.x, self.y
+        elif axis == Axis.Y:
+            return self.y, self.z
+        else:
+            return self.z, self.x
+
     def print_point(self):
         print(str(self.x) + ' \t ' + str(self.y) + ' \t ' + str(self.z))
+
+def build_line_equations(degree, num_star_slices):
+    # construct circle proscribing grid
+    diameter = math.sqrt(2) * GRID_SIZE
+    radius = diameter / 2
+    line_grids = np.zeros((num_star_slices, GRID_SIZE, GRID_SIZE))
+    for i in range(num_star_slices):
+        angle = math.radians(i*degree)
+        circ_point_x = radius * math.cos(angle)
+        circ_point_y = radius * math.sin(angle)
+        for t in np.arange(-10, 10, 0.01):
+            # sample point on line
+            x = int(round(GRID_SIZE/2 + (circ_point_x - GRID_SIZE/2)*t))
+            y = int(round(GRID_SIZE/2 + (circ_point_y - GRID_SIZE/2)*t))
+            if x >= GRID_SIZE or y >= GRID_SIZE or x < 0 or y < 0:
+                continue
+
+            # add point to grid
+            line_grids[i][x][y] = 1
+
+            # increase thickness of line
+            res_factor = 10
+            for j in np.arange(-res_factor//2, res_factor//2, 1):
+                if x + int(j) >= GRID_SIZE or (x + int(j)) < 0:
+                    continue
+                line_grids[i][x + int(j)][y] = 1
+
+                if y + int(j) >= GRID_SIZE or (y + int(j)) < 0:
+                    continue
+                line_grids[i][x][y + int(j)] = 1
+
+    line_grids = line_grids.astype(int)
+    return line_grids
 
 def tri_centroid(triangle):
     '''
@@ -180,6 +227,7 @@ def parseArgs():
     parser.add_argument('--peaks_num', help='The number of peaks to keep after filtering out.', required=False)
     parser.add_argument('--grid_size', help='The size of the grid that all shapes will scale to.', required=False)
     parser.add_argument('--rotate', help='Enable rotation.', action='store_true', required=False)
+    parser.add_argument('--star_rotate', help='Enable star rotation in degree increments.', required=False)
     parser.add_argument('--destroyDB', help='Destroy the database.', action='store_true', required=False)
     parser.add_argument('--verbose', help='Enable verbose mode.', action='store_true', required=False)
     parser.add_argument('--interp', help='Enable interpolation.', action='store_true', required=False)
@@ -188,7 +236,7 @@ def parseArgs():
     parser.add_argument('--sigs_in_neighborhood', help='Minimum number of signatures to match within a neighborhood.', required=False)
     parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
     args = parser.parse_args()
-    
+
     # Get list of files recursively
     stl_inputs = []
     for filepath in args.stl:
@@ -200,7 +248,7 @@ def parseArgs():
             stl_inputs.append(filepath)
     # Check that all files end with .stl
     stl_inputs = [filepath for filepath in stl_inputs if is_stl(filepath) and not is_binary(filepath)]
-        
+
     global DEBUG
     global VERBOSE
     global NUMBER_OF_MATCHES
@@ -209,6 +257,7 @@ def parseArgs():
     global NUM_OF_PEAKS
     global GRID_SIZE
     global ROTATE
+    global STAR_ROTATE
     global INTERP
     global PRINT_COLLISIONS
     global NEIGHBORHOODS
@@ -230,10 +279,12 @@ def parseArgs():
         NUM_OF_PEAKS = int(args.peaks_num)
     if args.grid_size is not None:
         GRID_SIZE = int(args.grid_size)
+    if args.star_rotate is not None:
+        STAR_ROTATE = int(args.star_rotate)
     if args.sigs_in_neighborhood is not None:
         NEIGHBORHOODS = True
         MIN_SIGNATURES_TO_MATCH = int(args.sigs_in_neighborhood)
-        
+
     return stl_inputs, args.mode, args.destroyDB
 
 
@@ -281,7 +332,7 @@ def find_max_min_range(points_array, axis):
 
 def sha1_hash(bytes):
     '''
-    Compute the SHA-1 hash of a byte stream. 
+    Compute the SHA-1 hash of a byte stream.
     '''
     sha = hashlib.sha1()
     sha.update(bytes)
@@ -321,3 +372,12 @@ def print_lst_of_tuples(lst):
         match = l[0]
         accuracy = l[1]
         print('\t' + match + '\t:\t' + str(round(accuracy, 3)))
+
+def normalize(lst):
+    max_elem = max(lst,key=lambda item:item[1])[1]
+    if max_elem <= 1:
+        return
+    # min_elem = min(lst,key=lambda item:item[1])[1]
+    # delta = max_elem - min_elem
+    for i in range(len(lst)):
+        lst[i] = (lst[i][0], lst[i][1] / max_elem)

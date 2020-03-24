@@ -6,7 +6,7 @@ import hashlib
 class Database:
     '''
     Key-Value storage.
-    
+
     Schema:
     1) Signatures DB:
         +-------------------+-------------------+
@@ -20,14 +20,14 @@ class Database:
         +-------------------+-------------------+
         | signature_hash    | [ anchor_hash ]   |
         +-------------------+-------------------+
-    3) Filenames DB: 
+    3) Filenames DB:
         // maybe change the key to filecontents hash
         +-------------------+-------------------+
         | Key               | Value             |
         +-------------------+-------------------+
         | filename_hash     | filename          |
         +-------------------+-------------------+
-    
+
     Neighborhoods:
     +-----------+-------------------------------+
     | Key       | Value                         |
@@ -35,11 +35,11 @@ class Database:
     | Anchor_id | [ signature_from_anchor_id ]  |
     +-----------+-------------------------------+
     '''
-    
+
 
     def __init__(self, database_name):
         '''
-        Open database_name database. Create it if does not exist. 
+        Open database_name database. Create it if does not exist.
         '''
         self.database_name = database_name
         self.db = plyvel.DB(database_name, create_if_missing=True)
@@ -138,6 +138,9 @@ class Database:
         signatures_matches = sorted(signatures_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
         signatures_with_collisions_matches = sorted(signatures_with_collisions_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
         # return lists of tuples
+        _hp.normalize(anchor_matches)
+        _hp.normalize(signatures_matches)
+        _hp.normalize(signatures_with_collisions_matches)
         return anchor_matches, signatures_matches, signatures_with_collisions_matches
 
 
