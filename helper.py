@@ -80,9 +80,10 @@ Number of bytes of the hash output
 HASH_DIGEST_SIZE = 20
 
 '''
-Export STL matches as PNGs.
+Export STL matches as PNGs and show them.
 '''
 EXPORT_PNGS = False
+SHOW_PNGS = False
 
 class Axis(Enum):
     '''
@@ -240,6 +241,7 @@ def parseArgs():
     parser.add_argument('--sigs_in_neighborhood', help='Minimum number of signatures to match within a neighborhood.', required=False)
     parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
     parser.add_argument('--export_png', help='Export PNG images for the matches.', action='store_true', required=False)
+    parser.add_argument('--show_png', help='Show the generated PNG images.', action='store_true', required=False)
     args = parser.parse_args()
 
     # Get list of files recursively
@@ -268,12 +270,14 @@ def parseArgs():
     global NEIGHBORHOODS
     global MIN_SIGNATURES_TO_MATCH
     global EXPORT_PNGS
+    global SHOW_PNGS
 
     DEBUG = args.debug
     ROTATE = args.rotate
     INTERP = args.interp
     VERBOSE = args.verbose
     EXPORT_PNGS = args.export_png
+    SHOW_PNGS = args.show_png
     PRINT_COLLISIONS = args.print_collisions
     NEIGHBORHOODS = args.neighborhoods
     if args.matches_num is not None:
@@ -380,14 +384,20 @@ def print_lst_of_tuples(lst):
         accuracy = l[1]
         print('\t' + match + '\t:\t' + str(round(accuracy, 3)))
 
-def export_pngs(lst):
-    for file in lst:
-        print('Exporting ' + file[:-4] + '.png')
-        os.system('openscad -o ' + file[:-4] + '.png -D \'model="' + file +
-                    '"; col=[0, 0.55, 0.81]\' --autocenter --viewall ' +
-                    '--colorscheme Nature --imgsize 3000,3000 ./open_stl.scad'
+def export_pngs(lst, show_png=False):
+    if not os.path.exists('results'):
+        os.makedirs('results')
+    for i in range(len(lst)):
+        file = lst[i]
+        print('Exporting ./results/' + str(i+1) + '.png')
+        os.system(
+                'openscad -o ./results/' + str(i+1) + '.png -D \'model="' + file +
+                '"; col=[0, 0.55, 0.81]\' --autocenter --viewall ' +
+                '--colorscheme Nature --imgsize 3000,3000 ./open_stl.scad'
                 )
         print()
+        if show_png:
+            os.system('eog ./results/' + str(i+1) + '.png &')
 
 def normalize(lst):
     max_elem = max(lst,key=lambda item:item[1])[1]

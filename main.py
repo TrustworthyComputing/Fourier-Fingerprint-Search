@@ -58,8 +58,8 @@ def main():
 
             _hp.print_lst_of_tuples(matches)
             print()
-            if _hp.EXPORT_PNGS:
-                _hp.export_pngs([i[0] for i in matches])
+            if _hp.EXPORT_PNGS or _hp.SHOW_PNGS:
+                _hp.export_pngs([i[0] for i in matches], _hp.SHOW_PNGS)
 
     # Close the database
     db.close_db()
