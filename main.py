@@ -43,21 +43,21 @@ def main():
             db.add_signatures(neighborhoods, stl_file)
         # Search in database for potential matches
         else: # mode == 'search':
-            anchor_matches, signatures_matches, signatures_with_collisions_matches = db.search_signatures(neighborhoods)
+            anchor_matches, signatures_matches = db.search_signatures(neighborhoods)
 
             matches = None
+            if _hp.PRINT_NAIVE:
+                print('\nFiles matched with ' + stl_file + ' using the number of signatures : ', end='')
+                matches = signatures_matches
+                _hp.print_lst_of_tuples(matches)
+                print()
+
             if _hp.NEIGHBORHOODS:
                 print('\nFiles matched with ' + stl_file + ' using the number of neighborhoods : ', end='')
                 matches = anchor_matches
-            elif _hp.PRINT_COLLISIONS:
-                print('\nFiles matched with ' + stl_file + ' using the number of signatures (including collisions) : ', end='')
-                matches = signatures_with_collisions_matches
-            else:
-                print('\nFiles matched with ' + stl_file + ' using the number of signatures : ', end='')
-                matches = signatures_matches
+                _hp.print_lst_of_tuples(matches)
+                print()
 
-            _hp.print_lst_of_tuples(matches)
-            print()
             if _hp.EXPORT_PNGS or _hp.SHOW_PNGS:
                 _hp.export_pngs([i[0] for i in matches], _hp.SHOW_PNGS)
 

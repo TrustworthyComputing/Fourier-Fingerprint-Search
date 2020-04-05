@@ -62,7 +62,7 @@ INTERP = False
 '''
 Flag to print accuracy including collisions.
 '''
-PRINT_COLLISIONS = False
+PRINT_NAIVE = False
 
 '''
 Flag to print accuracy using the neighborhoods approach.
@@ -239,7 +239,7 @@ def parseArgs():
     parser.add_argument('--debug', help='Enable debug mode.', action='store_true', required=False)
     parser.add_argument('--neighborhoods', help='Print matches using the neighborhood approach.', action='store_true', required=False)
     parser.add_argument('--sigs_in_neighborhood', help='Minimum number of signatures to match within a neighborhood.', required=False)
-    parser.add_argument('--print_collisions', help='Print matches with collisions.', action='store_true', required=False)
+    parser.add_argument('--print_naive', help='Print matches without neighborhoods.', action='store_true', required=False)
     parser.add_argument('--export_png', help='Export PNG images for the matches.', action='store_true', required=False)
     parser.add_argument('--show_png', help='Show the generated PNG images.', action='store_true', required=False)
     args = parser.parse_args()
@@ -266,7 +266,7 @@ def parseArgs():
     global ROTATE
     global STAR_ROTATE
     global INTERP
-    global PRINT_COLLISIONS
+    global PRINT_NAIVE
     global NEIGHBORHOODS
     global MIN_SIGNATURES_TO_MATCH
     global EXPORT_PNGS
@@ -278,7 +278,7 @@ def parseArgs():
     VERBOSE = args.verbose
     EXPORT_PNGS = args.export_png
     SHOW_PNGS = args.show_png
-    PRINT_COLLISIONS = args.print_collisions
+    PRINT_NAIVE = args.print_naive
     NEIGHBORHOODS = args.neighborhoods
     if args.matches_num is not None:
         NUMBER_OF_MATCHES = int(args.matches_num)
@@ -295,7 +295,8 @@ def parseArgs():
     if args.sigs_in_neighborhood is not None:
         NEIGHBORHOODS = True
         MIN_SIGNATURES_TO_MATCH = int(args.sigs_in_neighborhood)
-
+    if NEIGHBORHOODS == False:
+        PRINT_NAIVE = True
     return stl_inputs, args.mode, args.destroyDB
 
 

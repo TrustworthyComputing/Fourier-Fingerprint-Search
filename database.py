@@ -116,7 +116,6 @@ class Database:
         # Check how many signatures and neighborhoods matched
         anchor_matches = {}
         signatures_matches = {}
-        signatures_with_collisions_matches = {}
         signatures_dict = {}
         for filename, anchors in matched_files.items():
             signatures_dict[filename] = {}
@@ -132,16 +131,13 @@ class Database:
                     signatures_dict[filename][s] = 1
             anchor_matches[filename] = anchors['anchors_matched'] / len(neighborhoods)
             signatures_matches[filename] = (len(signatures_dict[filename]) - 2) / total_signatures
-            signatures_with_collisions_matches[filename] = signatures_dict[filename]['total'] / total_signatures
         # Find top-K matches with 2 different criteria.
         anchor_matches = sorted(anchor_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
         signatures_matches = sorted(signatures_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
-        signatures_with_collisions_matches = sorted(signatures_with_collisions_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
         # return lists of tuples
         _hp.normalize(anchor_matches)
         _hp.normalize(signatures_matches)
-        _hp.normalize(signatures_with_collisions_matches)
-        return anchor_matches, signatures_matches, signatures_with_collisions_matches
+        return anchor_matches, signatures_matches
 
 
 def destroy_db(database_name):
