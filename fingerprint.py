@@ -29,7 +29,7 @@ PEAK_SORT = True
 '''
 The number of peaks to keep after filtering out.
 '''
-DEFAULT_NUM_OF_PEAKS = 10
+DEFAULT_NUM_OF_PEAKS = 150
 
 '''
 Rotate shape by 90 degrees wrt a specified axis
