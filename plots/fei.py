@@ -64,11 +64,11 @@ fig, ax = plt.subplots(figsize=pltsize)
 
 ax.margins(0.01, 0.01)
 
-rects1_neighborhoods = ax.bar(index-width/2, data8b_neighborhoods, width, color='xkcd:very light green', hatch='xxxxx', edgecolor='black', linewidth=1)
-rects2_neighborhoods = ax.bar(index+width/2, data16b_neighborhoods, width, color='xkcd:light salmon', hatch='.....', edgecolor='black', linewidth=1)
+rects1_neighborhoods = ax.bar(index-width/2, data8b_neighborhoods, width, color='#69ceff', hatch='xxxx', edgecolor='black', linewidth=1)
+rects2_neighborhoods = ax.bar(index+width/2, data16b_neighborhoods, width, color='#bdbdbd', hatch='....', edgecolor='black', linewidth=1)
 
-rects1_naive = ax.bar(index-width/2, data8b_naive, width, color='xkcd:very light green', edgecolor='black', linewidth=1)
-rects2_naive = ax.bar(index+width/2, data16b_naive, width, color='xkcd:light salmon', edgecolor='black', linewidth=1)
+rects1_naive = ax.bar(index-width/2, data8b_naive, width, color='#69ceff', edgecolor='black', linewidth=1)
+rects2_naive = ax.bar(index+width/2, data16b_naive, width, color='#bdbdbd', edgecolor='black', linewidth=1)
 
 
 # ax.set_yscale('log')
