@@ -1,3 +1,4 @@
+import sys
 import glob
 from checker_common import *
 
@@ -9,7 +10,8 @@ def main():
     print('Calculating classification accuracy based on first ' + str(TOP_N) + ' results')
     print('=' * PRINT_LEN)
     print()
-    search_results = glob.glob("benchmarks_search/search_*_s2_f10.txt")
+    path = sys.argv[1] if len(sys.argv) > 1 else 'experiments/search_*_s2_f10_min2.txt'
+    search_results = glob.glob(path)
     all_results = { 'total_queries' : 0, 'total_naive_correct' : 0, 'total_neighborhoods_correct' : 0 }
     for file in search_results:
         parse_mode = Mode.Naive
@@ -22,12 +24,12 @@ def main():
         is_neighborhoods = False
         f = open(file, 'r')
         for line in f:
-            if "matched" in line:
+            if 'matched' in line:
                 result_counter = 0
                 query_class = get_query_class_from_line(line)
                 query_filename = get_query_filename_from_line(line)
                 log(query_class)
-                if "neighborhoods" in line:
+                if 'neighborhoods' in line:
                     parse_mode = Mode.Neighborhoods
                     results['neighborhoods-queries-count'] += 1
                 else:

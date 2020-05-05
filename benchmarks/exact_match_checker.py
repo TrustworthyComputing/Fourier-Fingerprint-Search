@@ -1,3 +1,4 @@
+import sys
 import glob
 from checker_common import *
 
@@ -9,7 +10,8 @@ def main():
     print('Calculating top-' + str(TOP_N) + ' accuracy')
     print('=' * PRINT_LEN)
     print()
-    search_results = glob.glob('benchmarks_search/search_*_s2_f10.txt')
+    path = sys.argv[1] if len(sys.argv) > 1 else 'experiments/search_*_s2_f10_min2.txt'
+    search_results = glob.glob(path)
     all_results = { 'total_queries' : 0, 'total_naive_correct' : 0, 'total_neighborhoods_correct' : 0 }
     for file in search_results:
         parse_mode = Mode.Naive
