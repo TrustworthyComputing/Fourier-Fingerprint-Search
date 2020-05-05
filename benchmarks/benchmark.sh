@@ -20,7 +20,7 @@ for d in $DATASET_PATH/*/ ; do
         (time python3 main.py --stl "$d" --mode learn --slices $SLICES --fanout $FANOUT ) &> results/learn_"$filename"_s"$SLICES"_f"$FANOUT".txt
     else
         echo "Search $filename slices $SLICES fanout $FANOUT"
-        (time python3 main.py --stl "$d" --mode search --slices $SLICES --fanout $FANOUT --print_naive --neighborhoods --sigs_in_neighborhood $MINSIGS) &> results/search_"$filename"_s"$SLICES"_f"$FANOUT"_min"MINSIGS".txt
+        (time python3 main.py --stl "$d" --mode search --slices $SLICES --fanout $FANOUT --print_naive --neighborhoods --sigs_in_neighborhood $MINSIGS) &> results/search_"$filename"_s"$SLICES"_f"$FANOUT"_min"$MINSIGS".txt
     fi
 
 done
