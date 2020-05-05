@@ -17,7 +17,6 @@ def main():
             'naive-correct-results' : 0, 'neighborhoods-correct-results' : 0,
             'naive-queries-count' : 0, 'neighborhoods-queries-count' : 0
         }
-        query_filename = ''
         result_counter = 0
         f = open(file, 'r')
         for line in f:
