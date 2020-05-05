@@ -2,6 +2,7 @@ import helper as _hp
 import database as _db
 import fingerprint as _fp
 import os
+import sys
 from tqdm import tqdm
 
 def main():
@@ -11,6 +12,9 @@ def main():
     # Delete database if the flag is set
     if destroyDB:
         _db.destroy_db('./avocado_db')
+
+    if mode == 'search':
+        sys.exit(0)
 
     # Open (or create) database
     db = _db.Database('./avocado_db')
