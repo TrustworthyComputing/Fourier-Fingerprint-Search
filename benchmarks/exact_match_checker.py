@@ -1,0 +1,96 @@
+import glob
+from enum import Enum
+
+TOP_N = 1
+DEBUG = False
+PRINT_LEN = 64
+
+
+class Mode(Enum):
+    Naive = 1
+    Neighborhoods = 2
+
+
+def log(str):
+    if DEBUG:
+        print(str)
+
+
+def line_empty(line):
+    return len(line.split('\t')) < 3
+
+
+def get_query_filename_from_line(line):
+    query = ''
+    prevWord = ''
+    for word in line.split(' '):
+        if 'with' in prevWord:
+            query = word
+            break
+        prevWord = word
+    return query.split('/')[-1].strip('\n')
+
+
+def get_answer_filename_from_line(line):
+    filename = line.split('\t')[-3]
+    return filename.split('/')[-1].strip('\n')
+
+
+def main():
+    print()
+    print('=' * PRINT_LEN)
+    print('Calculating top-' + str(TOP_N) + ' accuracy')
+    print('=' * PRINT_LEN)
+    print()
+    search_results = glob.glob('benchmarks_search/search_*_s2_f10.txt')
+    all_results = { 'total_queries' : 0, 'total_naive_correct' : 0, 'total_neighborhoods_correct' : 0 }
+    for file in search_results:
+        parse_mode = Mode.Naive
+        results = {
+            'naive-correct-results' : 0, 'neighborhoods-correct-results' : 0,
+            'naive-queries-count' : 0, 'neighborhoods-queries-count' : 0
+        }
+        query_filename = ''
+        result_counter = 0
+        f = open(file, 'r')
+        for line in f:
+            if 'matched' in line:
+                result_counter = 0
+                query_filename = get_query_filename_from_line(line)
+                log(query_filename)
+                if 'neighborhoods' in line:
+                    parse_mode = Mode.Neighborhoods
+                    results['neighborhoods-queries-count'] += 1
+                else:
+                    parse_mode = Mode.Naive
+                    results['naive-queries-count'] += 1
+                continue
+            else:
+                if result_counter >= TOP_N or line_empty(line):
+                    continue
+                result_counter += 1
+                answer_filename = get_answer_filename_from_line(line)
+                log('\t' + answer_filename)
+                if answer_filename == query_filename:
+                    if parse_mode == Mode.Neighborhoods:
+                        results['neighborhoods-correct-results'] += 1
+                    else:
+                        results['naive-correct-results'] += 1
+        assert(results['naive-queries-count'] == results['neighborhoods-queries-count'])
+        print('Class :', file)
+        print('\tTotal queries            :', results['neighborhoods-queries-count'])
+        print('\tAccuracy (naive)         :', round(results['naive-correct-results']/results['naive-queries-count'], 2) )
+        print('\tAccuracy (neighborhoods) :', round(results['neighborhoods-correct-results']/results['neighborhoods-queries-count'], 2) )
+        all_results['total_queries'] += results['naive-queries-count']
+        all_results['total_naive_correct'] += results['naive-correct-results']
+        all_results['total_neighborhoods_correct'] += results['neighborhoods-correct-results']
+        print()
+        f.close()
+
+    print('=' * PRINT_LEN)
+    print('Total queries                  :', all_results['total_queries'])
+    print('Total accuracy (naive)         :', round(all_results['total_naive_correct']/all_results['total_queries'], 3))
+    print('Total accuracy (neighborhoods) :', round(all_results['total_neighborhoods_correct']/all_results['total_queries'], 3))
+    print('=' * PRINT_LEN)
+
+main()
