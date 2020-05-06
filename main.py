@@ -12,9 +12,8 @@ def main():
     # Delete database if the flag is set
     if destroyDB:
         _db.destroy_db('./avocado_db')
-
-    if mode == 'search':
-        sys.exit(0)
+        if mode == 'search':
+            sys.exit(0)
 
     # Open (or create) database
     db = _db.Database('./avocado_db')
