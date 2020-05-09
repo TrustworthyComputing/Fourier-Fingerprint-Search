@@ -87,4 +87,6 @@ def main():
     print('Total accuracy (neighborhoods) :', round(all_results['total_neighborhoods_correct']/all_results['total_queries'], 3))
     print('=' * PRINT_LEN)
 
-main()
+for i in range(1, 6, 1):
+    TOP_N = i
+    main()
