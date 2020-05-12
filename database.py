@@ -107,7 +107,13 @@ class Database:
                     # Count occurences
                     if anchor_hash not in matched_files[filename]:
                         matched_files[filename][anchor_hash] = []
-                        matched_files[filename]['anchors_matched'] = 0
+                        # matched_files[filename]['anchors_matched'] = 0
+
+# FIXME: For benchmarking, remove later
+                        matched_files[filename]['anchors_matched'] = {}
+                        for min_sigs in range(_hp.MIN_SIGNATURES_TO_MATCH, _hp.FAN_VALUE+1, _hp.MIN_SIGNATURES_TO_MATCH):
+                            matched_files[filename]['anchors_matched'][min_sigs] = 0
+
                     matched_files[filename][anchor_hash].append(sig)
                     matched_files[filename]['total'] += 1
                 total_signatures += 1
@@ -123,19 +129,41 @@ class Database:
                 # Skip the counters
                 if anch == 'anchors_matched' or anch == 'total':
                     continue
-                if len(sigs) >= _hp.MIN_SIGNATURES_TO_MATCH:
-                    matched_files[filename]['anchors_matched'] += 1
+                # if len(sigs) >= _hp.MIN_SIGNATURES_TO_MATCH:
+                #     matched_files[filename]['anchors_matched'] += 1
+
+# FIXME: For benchmarking, remove later
+                for min_sigs in range(_hp.MIN_SIGNATURES_TO_MATCH, _hp.FAN_VALUE+1, _hp.MIN_SIGNATURES_TO_MATCH):
+                    if len(sigs) >= min_sigs:
+                        matched_files[filename]['anchors_matched'][min_sigs] += 1
+
                 for s in sigs:
                     signatures_dict[filename][s] = 1
-            anchor_matches[filename] = anchors['anchors_matched'] / len(neighborhoods)
+            # anchor_matches[filename] = anchors['anchors_matched'] / len(neighborhoods)
+
+# FIXME: For benchmarking, remove later
+            anchor_matches[filename] = {}
+            for min_sigs in range(_hp.MIN_SIGNATURES_TO_MATCH, _hp.FAN_VALUE+1, _hp.MIN_SIGNATURES_TO_MATCH):
+                anchor_matches[filename][min_sigs] = anchors['anchors_matched'][min_sigs] / len(neighborhoods)
+
             signatures_matches[filename] = (len(signatures_dict[filename]) - 2) / total_signatures
-        # Find top-K matches with 2 different criteria.
-        anchor_matches = sorted(anchor_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
+        # # Find top-K matches with 2 different criteria.
+        # anchor_matches = sorted(anchor_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
         signatures_matches = sorted(signatures_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
-        # return lists of tuples
-        _hp.normalize(anchor_matches)
-        # _hp.normalize(signatures_matches)
-        return anchor_matches, signatures_matches
+        # # return lists of tuples
+        # _hp.normalize(anchor_matches)
+        # return anchor_matches, signatures_matches
+# FIXME: For benchmarking, remove later
+        nbr_matches_min_sigs = {}
+
+        for min_sigs in range(_hp.MIN_SIGNATURES_TO_MATCH, _hp.FAN_VALUE+1, _hp.MIN_SIGNATURES_TO_MATCH):
+
+            # new_dict = dict([(value, key) for key, value in old_dict.items()])
+
+            nbr_matches_min_sigs[min_sigs] = dict([(key, value[min_sigs]) for key, value in anchor_matches.items()])
+            nbr_matches_min_sigs[min_sigs] = sorted(nbr_matches_min_sigs[min_sigs].items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
+
+        return nbr_matches_min_sigs, signatures_matches
 
 
 def destroy_db(database_name):

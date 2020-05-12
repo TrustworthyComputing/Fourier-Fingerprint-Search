@@ -48,3 +48,8 @@ def get_answer_filename_from_line(line):
 def get_answer_class_from_line(line):
     filename = line.split('\t')[-3]
     return filename.split('/')[-2].strip('\n')
+
+
+def get_FEI_from_line(line):
+    score = line.split('\t')[-1].strip('\n')
+    return float(score)

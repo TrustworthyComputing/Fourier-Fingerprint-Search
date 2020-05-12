@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 def main():
     # parse arguments
-    stl_files, mode, destroyDB = _hp.parseArgs()
+    dir_name, stl_files, mode, destroyDB = _hp.parseArgs()
 
     # Delete database if the flag is set
     if destroyDB:
@@ -35,8 +35,13 @@ def main():
     if len(stl_files) < 2:
         disable_tqdm = True
 
+    files = {}
+    for min_sigs in range(_hp.MIN_SIGNATURES_TO_MATCH, _hp.FAN_VALUE+1, _hp.MIN_SIGNATURES_TO_MATCH):
+        files[min_sigs] = open(dir_name + '_slices'+str(_hp.NUM_OF_SLICES) + '_fanout'+str(_hp.FAN_VALUE) + '_minsig' + str(min_sigs) + '.txt', 'w')
+
     # For each file
-    for stl_file in tqdm(stl_files, ncols=100, bar_format='[{n_fmt}/{total_fmt}] {l_bar}{bar}|', disable=disable_tqdm):
+    # for stl_file in tqdm(stl_files, ncols=100, bar_format='[{n_fmt}/{total_fmt}] {l_bar}{bar}|', disable=disable_tqdm):
+    for stl_file in stl_files:
         # generate fingerprint of the file
         neighborhoods = _fp.fingerprint(stl_file, _hp.NUM_OF_SLICES, _hp.NUM_OF_PEAKS, _hp.FAN_VALUE, _hp.ROTATE, _hp.INTERP, _hp.STAR_ROTATE)
 
@@ -45,23 +50,25 @@ def main():
             db.add_signatures(neighborhoods, stl_file)
         # Search in database for potential matches
         else: # mode == 'search':
-            anchor_matches, signatures_matches = db.search_signatures(neighborhoods)
+            # anchor_matches, signatures_matches = db.search_signatures(neighborhoods)
 
-            matches = None
-            if _hp.PRINT_NAIVE:
-                print('\nFiles matched with ' + stl_file + ' using the number of signatures : ', end='')
-                matches = signatures_matches
-                _hp.print_lst_of_tuples(matches)
-                print()
+            nbr_matches_min_sigs, signatures_matches = db.search_signatures(neighborhoods)
 
-            if _hp.NEIGHBORHOODS:
-                print('\nFiles matched with ' + stl_file + ' using the number of neighborhoods : ', end='')
-                matches = anchor_matches
-                _hp.print_lst_of_tuples(matches)
-                print()
+            for min_sigs in range(_hp.MIN_SIGNATURES_TO_MATCH, _hp.FAN_VALUE+1, _hp.MIN_SIGNATURES_TO_MATCH):
+                anchor_matches = nbr_matches_min_sigs[min_sigs]
+                matches = None
+                if _hp.PRINT_NAIVE:
+                    print('\nFiles matched with ' + stl_file + ' using the number of signatures : ', end='', file=files[min_sigs])
+                    matches = signatures_matches
+                    _hp.print_lst_of_tuples(matches, files[min_sigs])
+                    print(file=files[min_sigs])
 
-            if _hp.EXPORT_PNGS or _hp.SHOW_PNGS:
-                _hp.export_pngs([i[0] for i in matches], _hp.SHOW_PNGS)
+                if _hp.NEIGHBORHOODS:
+                    print('\nFiles matched with ' + stl_file + ' using the number of neighborhoods : ', end='', file=files[min_sigs])
+                    matches = anchor_matches
+                    _hp.print_lst_of_tuples(matches, files[min_sigs])
+                    print(file=files[min_sigs])
+
 
     # Close the database
     db.close_db()

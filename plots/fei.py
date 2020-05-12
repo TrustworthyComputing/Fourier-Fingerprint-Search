@@ -9,7 +9,6 @@ benchmark = 'class'
 mydpi = 600
 pltsize = (9, 3.2)
 
-nbits = ['Naive 2 slices', 'Naive 4 slices', 'Neighborhoods 2 slices', 'Neighborhoods 4 slices']
 
 data = {
     'class_naive' : {
@@ -81,8 +80,8 @@ ax.set_xticklabels(x_axis_labels, rotation='90')
 
 ax.tick_params(axis='both', which='major', labelsize=10)
 
-ax.legend((rects1_naive[0], rects2_naive[0], rects1_neighborhoods[0], rects2_neighborhoods[0]), nbits, fontsize=10, ncol=4, bbox_to_anchor=(0, 1.02, 1, 0.2), loc='lower center')
-# ax.legend((rects1_naive[0], rects2_naive[0], rects1_neighborhoods[0], rects2_neighborhoods[0]), nbits, fontsize=9, ncol=4, loc='lower center', framealpha=0.9)
+ax.legend((rects1_naive[0], rects2_naive[0], rects1_neighborhoods[0], rects2_neighborhoods[0]), ['Naive 2 slices', 'Naive 4 slices', 'Neighborhoods 2 slices', 'Neighborhoods 4 slices'], fontsize=10, ncol=4, bbox_to_anchor=(0, 1.02, 1, 0.2), loc='lower center')
+# ax.legend((rects1_naive[0], rects2_naive[0], rects1_neighborhoods[0], rects2_neighborhoods[0]), ['Naive 2 slices', 'Naive 4 slices', 'Neighborhoods 2 slices', 'Neighborhoods 4 slices'], fontsize=9, ncol=4, loc='lower center', framealpha=0.9)
 
 def autolabel(rects):
     for rect in rects:

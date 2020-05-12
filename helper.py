@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import heapq
 import hashlib
@@ -288,7 +289,10 @@ def parseArgs():
         MIN_SIGNATURES_TO_MATCH = int(args.sigs_in_neighborhood)
     if not NEIGHBORHOODS:
         PRINT_NAIVE = True
-    return stl_inputs, args.mode, args.destroyDB
+
+    dir_name = args.stl[0].split('/')[-1].strip()
+
+    return dir_name, stl_inputs, args.mode, args.destroyDB
 
 
 def rot90(points_grid):
@@ -366,15 +370,15 @@ def quantizer(num, accuracy=0.02):
     return round(num*factor)/factor
 
 
-def print_lst_of_tuples(lst):
+def print_lst_of_tuples(lst, f=sys.stdout):
     if len(lst) == 0:
-        print('0')
+        print('0', file=f)
     else:
-        print()
+        print(file=f)
     for l in lst:
         match = l[0]
         accuracy = l[1]
-        print('\t' + match + '\t:\t' + str(round(accuracy, 3)))
+        print('\t' + match + '\t:\t' + str(round(accuracy, 3)), file=f)
 
 
 def export_pngs(lst, show_png=False):
