@@ -123,7 +123,7 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90
         rot_slice_masks = _hp.build_line_equations(star_degree, num_star_slices)
         rot_slice_grids = np.zeros((num_star_slices, _hp.GRID_SIZE, _hp.GRID_SIZE))
 
-    for i in range(num_of_slices):
+    for i in range(num_of_slices + num_star_slices):
         # Put points on the grid
         grid = np.zeros((_hp.GRID_SIZE, _hp.GRID_SIZE))
         for j in range(points_per_slice):
@@ -144,6 +144,10 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90
         # If rotation flag is passed rotate three times for each axis
         for r in range(rot90_times):
             grid = _hp.rot90(grid)
+
+        if i >= num_of_slices:
+            grid = rot_slice_grids[i - num_of_slices]
+
         # FTT
         grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
         # Find peaks
@@ -165,31 +169,6 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90
             frequency_x_idx.append(triple[0])
             frequency_y_idx.append(triple[1])
         local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for _ in range(len(frequency_y_idx))])
-        maxima_list += local_maxima
-    # Handle rotational slices
-    for i in range(num_star_slices):
-        # FTT
-        grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(rot_slice_grids[i]))
-        # Find peaks
-        detected_peaks = detect_peaks(grid_fft)
-        magnitudes = grid_fft[detected_peaks]
-        j_arr, i_arr = np.where(detected_peaks)
-        # Find minimum magnitude with respect to the number of peaks to keep
-        min_magnitude = _hp.nth_largest(num_of_peaks_to_keep, magnitudes)
-        # If a slice does not have any peaks, continue
-        if min_magnitude is None:
-            continue
-        # filter peaks
-        magnitudes = magnitudes.flatten()
-        peaks = zip(i_arr, j_arr, magnitudes)
-        peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
-        # get indices for frequency x and frequency y
-        frequency_x_idx = []
-        frequency_y_idx = []
-        for x in peaks_filtered:
-            frequency_x_idx.append(x[1])
-            frequency_y_idx.append(x[0])
-        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
         maxima_list += local_maxima
 
     return maxima_list
