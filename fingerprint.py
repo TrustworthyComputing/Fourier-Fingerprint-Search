@@ -1,9 +1,7 @@
-import sys
 import pyfftw
 import math
 import numpy as np
 import copy
-import hashlib
 import helper as _hp
 import multiprocessing as mp
 from scipy.ndimage.filters import maximum_filter
@@ -11,12 +9,12 @@ from scipy.ndimage.morphology import generate_binary_structure, binary_erosion
 
 
 def stl_to_points_array(filename, interp):
-    '''
+    """
     Open filename STL file, parse the points and return an array of 3D points.
     If interp flag is true, use interpolation to add more points.
-    '''
+    """
     stl = open(filename, "r")
-    points_array = []
+    points_array = set()
     triangle = []
     points_count = 0
     in_triangle = False
@@ -33,7 +31,7 @@ def stl_to_points_array(filename, interp):
             assert (points_count == 3)
             points_count = 0
             for p in triangle:
-                points_array.append(p)
+                points_array.add(p)
             # interpolate
             if (interp):
                 prev_center = _hp.Point(['vertex', -100000.0, -100000.0, -100000.0])
@@ -44,20 +42,20 @@ def stl_to_points_array(filename, interp):
                     point_3 = _hp.tri_centroid([center, triangle[1], triangle[2]])
                     triangle = [point_1, point_2, point_3]
                     for p in triangle:
-                        points_array.append(copy.deepcopy(p))
-                    points_array.append(center)
-                    if (prev_center.x == center.x and prev_center.y == center.y and prev_center.z == center.z):
-                        break;
+                        points_array.add(copy.deepcopy(p))
+                    points_array.add(center)
+                    if prev_center.x == center.x and prev_center.y == center.y and prev_center.z == center.z:
+                        break
                     prev_center = center
             triangle = []
     stl.close()
-    return points_array
+    return list(points_array)
 
 
 def scale_points(points_array, grid_size=1000):
-    '''
+    """
     Determine scale factor and update all points.
-    '''
+    """
     # Find scale factor
     max_x, min_x, range_x = _hp.find_max_min_range(points_array, _hp.Axis.X)
     max_y, min_y, range_y = _hp.find_max_min_range(points_array, _hp.Axis.Y)
@@ -72,10 +70,10 @@ def scale_points(points_array, grid_size=1000):
 
 
 def detect_peaks(grid):
-    '''
+    """
     Takes a grid and detect the peaks using the local maximum filter.
     Returns a boolean mask of the peaks (i.e. 1 when the pixel's value is the neighborhood maximum, 0 otherwise)
-    '''
+    """
     # define an 8-connected neighborhood
     neighborhood = generate_binary_structure(2, 2)
     # apply the local maximum filter; all pixel of maximal value in their neighborhood are set to 1
@@ -91,11 +89,11 @@ def detect_peaks(grid):
 
 
 def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of_slices, fan_value, neighborhood_dict, rot90_times, star_degree):
-    '''
+    """
     Generate slices, apply FFT and generate the hashes for a given axis.
     The three axes can be run in parallel.
     The return value (signatures list) is added to a synchronized queue.
-    '''
+    """
     # Find peaks
     maxima_list = slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90_times, star_degree)
     # If debug, log the peaks list length
@@ -107,10 +105,10 @@ def parallel_slice_fft_and_hash(axis, points_array, num_of_peaks_to_keep, num_of
 
 
 def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90_times, star_degree):
-    '''
+    """
     Slice the array of points, calculate FFT and find the peaks.
     Return a list of peaks.
-    '''
+    """
     maxima_list = []
     num_star_slices = 0
     # Sort by axis
@@ -118,6 +116,8 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90
     # For each slice
     points_per_slice = math.ceil(len(scaled_points_array) / num_of_slices)
 
+    rot_slice_masks = []
+    rot_slice_grids = []
     if star_degree:
         num_star_slices = int(180/star_degree)
         rot_slice_masks = _hp.build_line_equations(star_degree, num_star_slices)
@@ -128,7 +128,7 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90
         grid = np.zeros((_hp.GRID_SIZE, _hp.GRID_SIZE))
         for j in range(points_per_slice):
             idx = (i * points_per_slice) + j
-            if (idx >= len(scaled_points_array)):
+            if idx >= len(scaled_points_array):
                 break
             p = scaled_points_array[idx]
             px, py = p.get_adjacent_axis_data(axis)
@@ -156,18 +156,16 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90
         if min_magnitude is None:
             continue
         # filter peaks
-        magnitudes = magnitudes.flatten()
         peaks = zip(i_arr, j_arr, magnitudes)
-        peaks_filtered = filter(lambda x: x[2] > min_magnitude, peaks)  # freq, time, mag
+        peaks_filtered = filter(lambda peak: peak[2] > min_magnitude, peaks)  # (freq_x, freq_y, mag)
         # get indices for frequency x and frequency y
         frequency_x_idx = []
         frequency_y_idx = []
-        for x in peaks_filtered:
-            frequency_x_idx.append(x[1])
-            frequency_y_idx.append(x[0])
-        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for k in range(len(frequency_y_idx))])
+        for triple in peaks_filtered:
+            frequency_x_idx.append(triple[0])
+            frequency_y_idx.append(triple[1])
+        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for _ in range(len(frequency_y_idx))])
         maxima_list += local_maxima
-
     # Handle rotational slices
     for i in range(num_star_slices):
         # FTT
@@ -198,23 +196,24 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90
 
 
 def generate_hashes(peaks_list, axis, fan_value):
-    '''
+    """
     Generate Hashes: returns a list of sha1 digests and anchor slice numbers
-    '''
+    peaks_list: [ (frequency_x, frequency_y, slice_no) ]
+    """
     neighborhood = {}
     # Use each point as an anchor
     for i in range(len(peaks_list) - fan_value):
         anchor = peaks_list[i]
         # Generate anchor ID based on
-        slice_num = anchor[2]
-        anchor_id = (anchor[0], anchor[1], slice_num, axis.value)
+        anchor_id = (anchor[0], anchor[1], anchor[2], axis.value)
         neighborhood[anchor_id] = []
         # For the next fan_value points
         for j in range(i + 1, min(i + 1 + fan_value, len(peaks_list))):
-            # Generate signatue
+            # Generate signature
             target = peaks_list[j]
             dist_wrt_z = target[2] - anchor[2]
-            hash_input = str(anchor[0]) + str(anchor[1]) + str(target[0]) + str(target[1]) + str(dist_wrt_z)
+            hash_input = str(anchor[0]) + str(anchor[1]) + str(target[0]) + str(target[1]) + str(dist_wrt_z) + str(axis.value)
+            # hash_input = str(anchor[0]) + str(anchor[1]) + str(target[0]) + str(target[1]) + str(anchor[2]) + str(target[2]) + str(axis.value) # Absolute hash input. Partial matches would be limited.
             h = _hp.sha1_hash(hash_input.encode())
             # append signature to the fingerprint of the file
             neighborhood[anchor_id].append(h)
@@ -222,13 +221,13 @@ def generate_hashes(peaks_list, axis, fan_value):
 
 
 def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotation, interp, star_rotate):
-    '''
+    """
     Generate the fingerprint of a STL file and store it in the hash table.
     stl_file            : STL input file name.
     num_of_slices       : Number of slices to split the STL file to
     num_of_peaks_to_keep: Number of peaks to keep after filtering the rest out
     fan_value           : Degree to which a fingerprint can be paired with its neighbors
-    '''
+    """
     # Parse STL and interpolate points
     points_array = stl_to_points_array(stl_file, interp)
     # Scale points
@@ -241,10 +240,10 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotati
         if rotation:
             total_rotations = 4
         for rot90_times in range(total_rotations):
+            # parallel_slice_fft_and_hash( axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, neighborhood_dict, rot90_times, star_rotate )
             p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, neighborhood_dict, rot90_times, star_rotate))
             processes.append(p)
             p.start()
-
     # Join the processes
     for p in processes:
         p.join()
@@ -253,6 +252,5 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotati
     if len(neighborhoods) == 0:
         print()
         _hp.error('No signatures generated. Try either decreasing the fan-value or increasing the number of slices.')
-        # exit(-1)
     # Return the list of hashes
     return neighborhoods

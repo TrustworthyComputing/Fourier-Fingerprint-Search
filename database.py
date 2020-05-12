@@ -1,10 +1,8 @@
 import helper as _hp
 import plyvel
-import hashlib
-
 
 class Database:
-    '''
+    """
     Key-Value storage.
 
     Schema:
@@ -34,13 +32,13 @@ class Database:
     +-----------+-------------------------------+
     | Anchor_id | [ signature_from_anchor_id ]  |
     +-----------+-------------------------------+
-    '''
+    """
 
 
     def __init__(self, database_name):
-        '''
+        """
         Open database_name database. Create it if does not exist.
-        '''
+        """
         self.database_name = database_name
         self.db = plyvel.DB(database_name, create_if_missing=True)
         # Generate prefixed databases
@@ -50,16 +48,16 @@ class Database:
 
 
     def close_db(self):
-        '''
+        """
         Close the database.
-        '''
+        """
         self.db.close()
 
 
     def add_signatures(self, neighborhoods, filename):
-        '''
-        Add list of signatures to database. Each signature points to a list of filenames. Refer to schema.
-        '''
+        """
+        Add list of signatures to database. Each signature points to a list of file names. Refer to schema.
+        """
         # Generate SHA1 hash of filename
         filename_hash = _hp.sha1_hash(filename.encode())
         # Store filename hash in the filenames prefixed database
@@ -71,7 +69,7 @@ class Database:
             for sig in hashes_lst:
                 # Get the list of filename hashes
                 filehashes_lst = self.signatures_db.get(sig)
-                # If this is the first occurence of this hash
+                # If this is the first occurrence of this hash
                 if filehashes_lst is None:
                     self.signatures_db.put(sig, filename_hash)
                     self.anchors_db.put(sig, anchor_hash)
@@ -81,9 +79,9 @@ class Database:
 
 
     def search_signatures(self, neighborhoods):
-        '''
+        """
         Search in database given a list of signatures. Return top NUMBER_OF_MATCHES mathced files.
-        '''
+        """
         matched_files = {}
         total_signatures = 0
         # Iterate over all signatures of the file
@@ -136,12 +134,13 @@ class Database:
         signatures_matches = sorted(signatures_matches.items(), key=lambda x: x[1], reverse=True)[:_hp.NUMBER_OF_MATCHES]
         # return lists of tuples
         _hp.normalize(anchor_matches)
-        _hp.normalize(signatures_matches)
+        # _hp.normalize(signatures_matches)
         return anchor_matches, signatures_matches
 
 
 def destroy_db(database_name):
-    '''
+    """
     Delete database_name database.
-    '''
+    """
+    print('Database destroyed')
     plyvel.destroy_db(database_name)

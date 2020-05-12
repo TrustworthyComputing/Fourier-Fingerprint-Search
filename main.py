@@ -1,7 +1,6 @@
 import helper as _hp
 import database as _db
 import fingerprint as _fp
-import os
 import sys
 from tqdm import tqdm
 
