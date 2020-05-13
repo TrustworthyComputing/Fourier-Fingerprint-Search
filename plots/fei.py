@@ -9,16 +9,16 @@ benchmark = 'class'
 mydpi = 600
 pltsize = (9, 3.2)
 
-nbits = ['Naive 2 slices', 'Naive 4 slices', 'Neighborhoods 2 slices', 'Neighborhoods 4 slices']
 
 data = {
-    'class_naive' : {
-        '2_slices' : [0.67, 0.97, 0.83, 0.78, 0.66, 0.96, 0.83, 0.87, 0.97, 0.94, 0.66, 0.85, 0.99, 0.74, 0.72, 0.66, 0.72, 0.99, 0.66, 0.75, 0.98, 0.90, 0.73, 0.98],
-        '4_slices' : [0.44, 0.76, 0.76, 0.83, 0.45, 0.78, 0.42, 0.63, 0.71, 0.80, 0.36, 0.50, 0.69, 0.54, 0.59, 0.52, 0.45, 0.64, 0.36, 0.51, 0.76, 0.71, 0.70, 0.55],
+    'class_fine_grained' : {
+        '2_slices' : [0.864, 0.966, 0.973, 0.871, 0.842, 0.881, 0.85, 0.793, 0.945, 0.956, 0.783, 0.84, 0.847, 0.856, 0.863, 0.861, 0.854, 0.793, 0.711, 0.819, 0.865, 0.956, 0.851, 0.842],
+        '6_slices' : [0.489, 0.829, 0.914, 0.829, 0.589, 0.776, 0.654, 0.613, 0.802, 0.85, 0.408, 0.913, 0.726, 0.672, 0.758, 0.655, 0.684, 0.627, 0.408, 0.574, 0.651, 0.847, 0.684, 0.615],
     },
+
     'class_neighborhoods' : {
-        '2_slices' : [0.68, 1.00, 1.00, 1.00, 0.69, 1.00, 0.91, 0.93, 1.00, 1.00, 0.76, 0.93, 1.00, 0.91, 0.94, 0.71, 0.97, 1.00, 0.76, 0.97, 1.00, 1.00, 0.88, 1.00],
-        '4_slices' : [0.48, 0.99, 0.99, 1.00, 0.65, 1.00, 0.71, 0.91, 0.97, 0.99, 0.58, 0.72, 0.94, 0.91, 0.88, 0.77, 0.77, 0.94, 0.58, 0.94, 0.98, 0.99, 0.99, 0.75],
+        '2_slices' : [0.913, 1.0, 1.00, 0.982, 0.891, 0.969, 0.889, 0.824, 0.992, 1.00, 0.798, 0.858, 0.927, 0.93, 0.936, 0.896, 0.934, 0.833, 0.705, 0.92, 0.9, 1.0, 0.891, 0.894],
+        '6_slices' : [0.594, 0.964, 0.994, 0.992, 0.828, 0.994, 0.843, 0.887, 0.972, 0.994, 0.577, 0.982, 0.951, 0.93, 0.963, 0.922, 0.941, 0.923, 0.56, 0.898, 0.863, 0.997, 0.918, 0.798],
     }
 }
 
@@ -49,11 +49,11 @@ x_axis_labels = [
     'Washers'
 ]
 
-data8b_naive = data[benchmark+"_naive"]['2_slices']
-data16b_naive = data[benchmark+"_naive"]['4_slices']
+data8b_fine_grained = data[benchmark+"_fine_grained"]['2_slices']
+data16b_fine_grained = data[benchmark+"_fine_grained"]['6_slices']
 
 data8b_neighborhoods = data[benchmark+"_neighborhoods"]['2_slices']
-data16b_neighborhoods = data[benchmark+"_neighborhoods"]['4_slices']
+data16b_neighborhoods = data[benchmark+"_neighborhoods"]['6_slices']
 
 
 N = len(data8b_neighborhoods)
@@ -67,22 +67,22 @@ ax.margins(0.01, 0.01)
 rects1_neighborhoods = ax.bar(index-width/2, data8b_neighborhoods, width, color='#69ceff', hatch='xxxx', edgecolor='black', linewidth=1)
 rects2_neighborhoods = ax.bar(index+width/2, data16b_neighborhoods, width, color='#bdbdbd', hatch='....', edgecolor='black', linewidth=1)
 
-rects1_naive = ax.bar(index-width/2, data8b_naive, width, color='#69ceff', edgecolor='black', linewidth=1)
-rects2_naive = ax.bar(index+width/2, data16b_naive, width, color='#bdbdbd', edgecolor='black', linewidth=1)
+rects1_fine_grained = ax.bar(index-width/2, data8b_fine_grained, width, color='#69ceff', edgecolor='black', linewidth=1)
+rects2_fine_grained = ax.bar(index+width/2, data16b_fine_grained, width, color='#bdbdbd', edgecolor='black', linewidth=1)
 
 
 # ax.set_yscale('log')
 ax.set_ylim([0, 1.05])
 ax.set_yticks(np.arange(0, 1.05, step=0.2))
-ax.set_ylabel('FEI index', fontsize=12)
+ax.set_ylabel('FEI index', fontsize=11)
 ax.set_xticks(index)
-ax.set_xlabel('FabWave Class', fontsize=12)
+ax.set_xlabel('FabWave Class', fontsize=11)
 ax.set_xticklabels(x_axis_labels, rotation='90')
 
-ax.tick_params(axis='both', which='major', labelsize=10)
+ax.tick_params(axis='both', which='major', labelsize=9)
 
-ax.legend((rects1_naive[0], rects2_naive[0], rects1_neighborhoods[0], rects2_neighborhoods[0]), nbits, fontsize=10, ncol=4, bbox_to_anchor=(0, 1.02, 1, 0.2), loc='lower center')
-# ax.legend((rects1_naive[0], rects2_naive[0], rects1_neighborhoods[0], rects2_neighborhoods[0]), nbits, fontsize=9, ncol=4, loc='lower center', framealpha=0.9)
+ax.legend((rects1_fine_grained[0], rects2_fine_grained[0], rects1_neighborhoods[0], rects2_neighborhoods[0]), ['Fine-grained 2 slices', 'Fine-grained 6 slices', 'Neighborhoods 2 slices', 'Neighborhoods 6 slices'], fontsize=9, ncol=4, bbox_to_anchor=(0, 1.02, 1, 0.2), loc='lower center')
+# ax.legend((rects1_fine_grained[0], rects2_fine_grained[0], rects1_neighborhoods[0], rects2_neighborhoods[0]), ['fine_grained 2 slices', 'fine_grained 4 slices', 'Neighborhoods 2 slices', 'Neighborhoods 4 slices'], fontsize=9, ncol=4, loc='lower center', framealpha=0.9)
 
 def autolabel(rects):
     for rect in rects:
