@@ -75,7 +75,7 @@ def detect_peaks(grid):
     Returns a boolean mask of the peaks (i.e. 1 when the pixel's value is the neighborhood maximum, 0 otherwise)
     """
     # define an 8-connected neighborhood
-    neighborhood = generate_binary_structure(2, 2)
+    neighborhood = generate_binary_structure(3, 2)
     # apply the local maximum filter; all pixel of maximal value in their neighborhood are set to 1
     local_max = (maximum_filter(grid, footprint=neighborhood) == grid)
     # local_max is a mask that contains the peaks we are looking for, but also the background. In order to isolate the peaks we must remove the background from the mask.
@@ -125,14 +125,13 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90
 
     for i in range(num_of_slices + num_star_slices):
         # Put points on the grid
-        grid = np.zeros((_hp.GRID_SIZE, _hp.GRID_SIZE))
+        grid = np.zeros((_hp.GRID_SIZE, _hp.GRID_SIZE, int(_hp.GRID_SIZE / num_of_slices)))
         for j in range(points_per_slice):
             idx = (i * points_per_slice) + j
             if idx >= len(scaled_points_array):
                 break
             p = scaled_points_array[idx]
-            px, py = p.get_adjacent_axis_data(axis)
-            grid[px][py] = 1
+            grid[p.x][p.y][p.z % int(_hp.GRID_SIZE / num_of_slices)] = 1
 
             # build rotational slices
             if star_degree:
@@ -149,26 +148,28 @@ def slice_and_fft(axis, points_array, num_of_peaks_to_keep, num_of_slices, rot90
             grid = rot_slice_grids[i - num_of_slices]
 
         # FTT
-        grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fft2(grid))
+        grid_fft = np.abs(pyfftw.interfaces.numpy_fft.fftn(grid))
         # Find peaks
         detected_peaks = detect_peaks(grid_fft)
         magnitudes = grid_fft[detected_peaks]
-        j_arr, i_arr = np.where(detected_peaks)
+        j_arr, i_arr, z_arr = np.where(detected_peaks)
         # Find minimum magnitude with respect to the number of peaks to keep
         min_magnitude = _hp.nth_largest(num_of_peaks_to_keep, magnitudes)
         # If a slice does not have any peaks, continue
         if min_magnitude is None:
             continue
         # filter peaks
-        peaks = zip(i_arr, j_arr, magnitudes)
-        peaks_filtered = filter(lambda peak: peak[2] > min_magnitude, peaks)  # (freq_x, freq_y, mag)
+        peaks = zip(i_arr, j_arr, z_arr, magnitudes)
+        peaks_filtered = filter(lambda peak: peak[3] >= min_magnitude, peaks)  # (freq_x, freq_y, mag)
         # get indices for frequency x and frequency y
         frequency_x_idx = []
         frequency_y_idx = []
+        frequency_z_idx = []
         for triple in peaks_filtered:
             frequency_x_idx.append(triple[0])
             frequency_y_idx.append(triple[1])
-        local_maxima = zip(frequency_x_idx, frequency_y_idx, [i for _ in range(len(frequency_y_idx))])
+            frequency_z_idx.append(triple[2])
+        local_maxima = zip(frequency_x_idx, frequency_y_idx, frequency_z_idx, [i for _ in range(len(frequency_y_idx))])
         maxima_list += local_maxima
 
     return maxima_list
