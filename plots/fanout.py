@@ -7,8 +7,8 @@ mydpi = 300
 pltsize = (7, 3)
 
 # TOP 3 accuracy
-fine_grained_accuracy = [ 0.893, 0.947, 0.893, 0.92, 0.916 ]
-neighborhoods_accuracy = [ 0.83, 0.867, 0.813, 0.84, 0.882 ]
+fine_grained_accuracy = [ 0.893, 0.947, 0.913, 0.92, 0.916 ]
+neighborhoods_accuracy = [ 0.83, 0.867, 0.831, 0.84, 0.882 ]
 Time = [ 1.11, 1.15, 1.15, 1.18, 1.21]
 
 N = len(neighborhoods_accuracy)
