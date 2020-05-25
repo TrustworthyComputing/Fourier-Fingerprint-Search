@@ -232,24 +232,24 @@ def parseArgs():
     """
     global DEBUG, VERBOSE, NUMBER_OF_MATCHES, FAN_VALUE, NUM_OF_SLICES, NUM_OF_PEAKS, GRID_SIZE, ROTATE, STAR_ROTATE, INTERP, PRINT_NAIVE, NEIGHBORHOODS, MIN_SIGNATURES_TO_MATCH, EXPORT_PNGS, SHOW_PNGS
     parser = argparse.ArgumentParser(description='STL compression')
-    parser.add_argument('--stl', help='Path to STL files (.stl) or directory.', type=file_or_dir_path, nargs='+', required=True)
-    parser.add_argument('--mode', type=str.lower, choices=['learn', 'search'], help='Learn (l) or Search (s) mode.', required=True)
-    parser.add_argument('--matches_num', help='Maximum number of matches to return.', required=False)
-    parser.add_argument('--slices', help='Number of slices.', required=False)
-    parser.add_argument('--fanout', help='Degree to which a fingerprint can be paired with its neighbors.', required=False)
-    parser.add_argument('--peaks_num', help='The number of peaks to keep after filtering out.', required=False)
-    parser.add_argument('--grid_size', help='The size of the grid that all shapes will scale to.', required=False)
-    parser.add_argument('--rotate', help='Enable rotation.', action='store_true', required=False)
-    parser.add_argument('--star_rotate', help='Enable star rotation in degree increments.', required=False)
-    parser.add_argument('--destroyDB', help='Destroy the database.', action='store_true', required=False)
-    parser.add_argument('--verbose', help='Enable verbose mode.', action='store_true', required=False)
-    parser.add_argument('--interp', help='Enable interpolation.', action='store_true', required=False)
-    parser.add_argument('--debug', help='Enable debug mode.', action='store_true', required=False)
-    parser.add_argument('--neighborhoods', help='Print matches using the neighborhood approach.', action='store_true', required=False)
-    parser.add_argument('--sigs_in_neighborhood', help='Minimum number of signatures to match within a neighborhood.', required=False)
-    parser.add_argument('--print_naive', help='Print matches without neighborhoods.', action='store_true', required=False)
-    parser.add_argument('--export_png', help='Export PNG images for the matches.', action='store_true', required=False)
-    parser.add_argument('--show_png', help='Show the generated PNG images.', action='store_true', required=False)
+    parser.add_argument('--stl',                help='Path to STL files (.stl) or directory.', type=file_or_dir_path, nargs='+', required=True)
+    parser.add_argument('--mode',               help='Learn or Search mode.', type=str.lower, choices=['learn', 'search'], required=True)
+    parser.add_argument('--K',                  help='Max number of search results.', required=False)
+    parser.add_argument('--N',                  help='Number of slices to divide 3D model.', required=False)
+    parser.add_argument('--fanout',             help='Degree to which a fingerprint can be paired with its neighbors.', required=False)
+    parser.add_argument('--P',                  help='Number of peaks to keep after filtering.', required=False)
+    parser.add_argument('--grid_size',          help='The 2D slice grid dimensions.', required=False)
+    parser.add_argument('--slices_rotation',    help='Enable rotation of slices technique.', action='store_true', required=False)
+    parser.add_argument('--star_rotation',      help='Enable star rotation in degree increments.', required=False)
+    parser.add_argument('--destroy_db',         help='Destroy the database.', action='store_true', required=False)
+    parser.add_argument('--interpolation',      help='Enable interpolation technique.', action='store_true', required=False)
+    parser.add_argument('--min_sig',            help='Min hashes to match in a neighborhood.', required=False)
+    parser.add_argument('--neighborhoods',      help='Print matches using the neighborhood approach.', action='store_true', required=False)
+    parser.add_argument('--print_fine_grained', help='Print matches using fine-grained approach.', action='store_true', required=False)
+    parser.add_argument('--verbose',            help='Enable verbose mode.', action='store_true', required=False)
+    parser.add_argument('--debug',              help='Enable debug mode.', action='store_true', required=False)
+    parser.add_argument('--export_png',         help='Export PNG images for the matches.', action='store_true', required=False)
+    parser.add_argument('--show_png',           help='Show the generated PNG images.', action='store_true', required=False)
     args = parser.parse_args()
 
     # Get list of files recursively
@@ -264,31 +264,31 @@ def parseArgs():
     # Check that all files end with .stl
     stl_inputs = [filepath for filepath in stl_inputs if is_stl(filepath) and not is_binary(filepath)]
     DEBUG = args.debug
-    ROTATE = args.rotate
-    INTERP = args.interp
+    ROTATE = args.slices_rotation
+    INTERP = args.interpolation
     VERBOSE = args.verbose
     EXPORT_PNGS = args.export_png
     SHOW_PNGS = args.show_png
-    PRINT_NAIVE = args.print_naive
+    PRINT_NAIVE = args.print_fine_grained
     NEIGHBORHOODS = args.neighborhoods
-    if args.matches_num is not None:
-        NUMBER_OF_MATCHES = int(args.matches_num)
+    if args.K is not None:
+        NUMBER_OF_MATCHES = int(args.K)
     if args.fanout is not None:
         FAN_VALUE = int(args.fanout)
-    if args.slices is not None:
-        NUM_OF_SLICES = int(args.slices)
-    if args.peaks_num is not None:
-        NUM_OF_PEAKS = int(args.peaks_num)
+    if args.N is not None:
+        NUM_OF_SLICES = int(args.N)
+    if args.P is not None:
+        NUM_OF_PEAKS = int(args.P)
     if args.grid_size is not None:
         GRID_SIZE = int(args.grid_size)
-    if args.star_rotate is not None:
-        STAR_ROTATE = int(args.star_rotate)
-    if args.sigs_in_neighborhood is not None:
+    if args.star_rotation is not None:
+        STAR_ROTATE = int(args.star_rotation)
+    if args.min_sig is not None:
         NEIGHBORHOODS = True
-        MIN_SIGNATURES_TO_MATCH = int(args.sigs_in_neighborhood)
+        MIN_SIGNATURES_TO_MATCH = int(args.min_sig)
     if not NEIGHBORHOODS:
         PRINT_NAIVE = True
-    return stl_inputs, args.mode, args.destroyDB
+    return stl_inputs, args.mode, args.destroy_db
 
 
 def rot90(points_grid):
