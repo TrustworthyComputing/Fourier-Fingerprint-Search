@@ -54,16 +54,13 @@ Files matched with benchmarks/FabWave/Bolts/07b46ed1-3801-45ad-9f42-5adfffb4e1c7
 ```
 
 
-<p align="left">
-    <img src="./images/NSF.png" height="12%" width="12%">
-    This project was supported by the National Science Foundation under Grant No. 1931916.
+<p align="center">
+<img width="12%" height="12%" src="./images/NSF.png">
+<img width="12%" height="12%" src="./images/twc.png">
 </p>
 
 
-<p align="left">
-    <img src="./images/twc.png" height="12%" width="12%">
-    Trustworthy Computing Group
-</p>
+This project was supported by the National Science Foundation under Grant No. 1931916. &nbsp; __Trustworthy Computing Group__
 
 
 [overview]: ./images/overview.png
