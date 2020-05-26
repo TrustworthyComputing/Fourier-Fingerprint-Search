@@ -1,98 +1,72 @@
-# Enabling Search for 3D CAD Models [![License MIT][badge-license]](LICENSE) [![Python 3.7][badge-python3]]((https://www.python.org/))
+# Peak your Frequency: Advanced Search of 3D CAD Files in the Fourier Domain [![License MIT][badge-license]](LICENSE) [![Python 3][badge-python3]]((https://www.python.org/))
 
-## Fingerprint Generation Overview
+## Fourier Fingerprint Search (FFS) Overview
 
 ![alt text][overview]
-
-1. Map vertices of STL triangles on a 3D plane. 
-    * Scale objects to fit in a grid of a predefined size.
-    
-1. Use **FFT** to get frequencies and magnitudes.
-    * We see frequencies and their magnitudes, but we don't know where in the design.
-    
-1. We need to know in which part of the design each frequency appeared.
-    * Introduce sliding window (Split the design in **chunks**) w.r.t. X, Y, and Z axes.
-    * Resulting slices can be used to perform **2D-FFT** (lower complexity but requires quantization), or **3D-FFT** (higher complexity and storage requirements but more accurate characterization of design). 
-
-1. For each chunk we need to find which frequencies are the most important.
-    * **Peaks**: Frequencies with the highest magnitude.
-    * Number of retrieved peaks determined by adjustable threshold.
-    
-1. Within each chunk identify the frequencies with the highest magnitude.
-    * This information forms a **signature** for this chunk of the design, and this signature becomes part of the fingerprint of the design as a whole.
-    * Fingerprint: union of signatures for each chunk of the design. 
-
-1. Use a **hash table** to make search fast.
-    * The signatures become the key to our hash table.
-    * Value is a tuple of (chunk_i, STL_ID). chunk_i identifies the chunk this frequency appeared in the STL_ID design.
-
-
-
-## STereoLithography (STL) Files 
-
-The main purpose of the STL file format is to encode the surface geometry of a 3D object.
-
-STL stores the following information:
-* The coordinates of the vertices.
-* The components of the unit normal vector to the triangle. The normal vector should point outwards with respect to the 3D model.
-
-
-STL supports both binary and ASCII format. The binary format is always recommended for 3D printing since it results in smaller file sizes.
-
-The ASCII files is in the following format:
-```
-solid OpenSCAD_Model
-    facet normal 0 0 1
-        outer loop
-            vertex -15.829 0 55.75
-            vertex -15.847 0.417 55.75
-            vertex -20.75 0 55.75
-        endloop
-    endfacet
-    facet normal 0 -0 1
-        outer loop
-        ...
-        ...
-        endloop
-    endfacet
-endsolid OpenSCAD_Model
-```
-
-
-
-#### Convert binary STL files to ASCII and back
-
-Our framework works with ASCII STL files. Using [NumPy-STL](https://pypi.org/project/numpy-stl/) (`pip3 install numpy-stl`) we can convert binary STLs to ASCII and back.
-
-Convert binary STL to ASCII:
-```
-$ stl2ascii ./stl_files/boat.stl ./stl_files/boat-ascii.stl
-```
-
-Convert ASCII STL to binary:
-```
-$ stl2bin ./stl_files/boat-ascii.stl ./stl_files/boat.stl
-```
-
-
-#### Visualize STL files with [OpenSCAD](https://www.openscad.org/):
-
-```
-import("absolute-path-to-repo/cad-to-audio/stl_files/boat-ascii.stl");
-```
 
 
 ## Installation
 ```
-pip3 install -r requirements.txt
+$ git clone https://github.com/TrustworthyComputing/Fourier-Fingerprint-Search.git
+$ cd Fourier-Fingerprint-Search
+$ pip3 install -r requirements.txt
+```
+
+## Usage
+The file `main.py` invokes the FFS framework.
+Proving the `-h` or `--help` command line argument prints a help message with the various parameters that can be passed to the framework.
+
+```
+$ python main.py -h
+```
+
+FFS supports two modes, `learn` and `search`. In the former, FFS populates the database while in the latter searches for potential matches to the file(s) given as command line arguments.
+
+### Learn
+
+For instance, the following command stores all the files from the `Bolts` directory to the database using 2 slices.
+```
+$ python main.py --mode learn --stl benchmarks/FabWave/Bolts --N 2
+```
+
+### Search
+
+Here, our query is the `Bolts/07b46ed1-3801-45ad-9f42-5adfffb4e1c7-ascii.stl` 3D model using both the fine-grained and the neighborhoods techniques.
+FFS returns the query as the first match and 4 similar ones.
+
+```
+$ python main.py --mode search --stl benchmarks/FabWave/Bolts/07b46ed1-3801-45ad-9f42-5adfffb4e1c7-ascii.stl --N 2 --neighborhoods --print_fine_grained
+
+Files matched with benchmarks/FabWave/Bolts/07b46ed1-3801-45ad-9f42-5adfffb4e1c7-ascii.stl using the number of signatures :
+	benchmarks/FabWave/Bolts/07b46ed1-3801-45ad-9f42-5adfffb4e1c7-ascii.stl	:	0.985
+	benchmarks/FabWave/Bolts/634a2f17-872e-45d0-9650-faa70156afad-ascii.stl	:	0.119
+	benchmarks/FabWave/Bolts/b8d3657b-a054-4c83-816c-9bce74c59724-ascii.stl	:	0.061
+	benchmarks/FabWave/Bolts/4ced7e80-446c-42f1-bc05-5f1eb472198b-ascii.stl	:	0.035
+	benchmarks/FabWave/Bolts/a773fc47-9f49-40d9-93ce-aa1ceeb10b00-ascii.stl	:	0.019
+
+
+Files matched with benchmarks/FabWave/Bolts/07b46ed1-3801-45ad-9f42-5adfffb4e1c7-ascii.stl using the number of neighborhoods :
+	benchmarks/FabWave/Bolts/07b46ed1-3801-45ad-9f42-5adfffb4e1c7-ascii.stl	:	1.0
+	benchmarks/FabWave/Bolts/634a2f17-872e-45d0-9650-faa70156afad-ascii.stl	:	0.431
+	benchmarks/FabWave/Bolts/b8d3657b-a054-4c83-816c-9bce74c59724-ascii.stl	:	0.293
+	benchmarks/FabWave/Bolts/4ced7e80-446c-42f1-bc05-5f1eb472198b-ascii.stl	:	0.19
+	benchmarks/FabWave/Bolts/a773fc47-9f49-40d9-93ce-aa1ceeb10b00-ascii.stl	:	0.172
 ```
 
 
+<p align="left">
+    <img src="./images/NSF.png" height="12%" width="12%">
+    This project was supported by the National Science Foundation under Grant No. 1931916.
+</p>
 
-### ![alt text][twc-logo] An open-source project by Trustworthy Computing Group
 
-[twc-logo]: ./images/twc.png
+<p align="left">
+    <img src="./images/twc.png" height="12%" width="12%">
+    Trustworthy Computing Group
+</p>
+
+
 [overview]: ./images/overview.png
 
 [badge-license]: https://img.shields.io/badge/license-MIT-green.svg?style=flat-square
-[badge-python3]: https://img.shields.io/badge/python-3.7-blue.svg?style=flat-square
+[badge-python3]: https://img.shields.io/badge/python-3-blue.svg?style=flat-square
