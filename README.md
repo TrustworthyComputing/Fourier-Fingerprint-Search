@@ -4,6 +4,7 @@
 
 ![alt text][overview]
 
+A Technical Report describing FFS is [available here](https://github.com/TrustworthyComputing/Fourier-Fingerprint-Search/tree/master/TechReport/TechReport.FourierFingerprintSearch.v1.0.pdf)
 
 ## Installation
 ```
@@ -54,13 +55,16 @@ Files matched with benchmarks/FabWave/Bolts/07b46ed1-3801-45ad-9f42-5adfffb4e1c7
 ```
 
 
-<p align="center">
-<img width="12%" height="12%" src="./images/NSF.png">
-<img width="12%" height="12%" src="./images/twc.png">
+<p align="left">
+    <img src="./images/NSF.png" height="12%" width="12%">
+    This material is based upon work supported by the National Science Foundation under Grant No. 1931916. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation.
 </p>
 
 
-This project was supported by the National Science Foundation under Grant No. 1931916. &nbsp; __Trustworthy Computing Group__
+<p align="left">
+    <img src="./images/twc.png" height="12%" width="12%">
+    This material was developed by the Trustworthy Computing Group at the University of Delaware.
+</p>
 
 
 [overview]: ./images/overview.png
