@@ -4,7 +4,20 @@
 
 ![alt text][overview]
 
-A Technical Report describing FFS is [available here](https://github.com/TrustworthyComputing/Fourier-Fingerprint-Search/tree/master/TechReport/TechReport.FourierFingerprintSearch.v1.0.pdf)
+
+#### Cite this work!
+
+The publication describing the FFS framework can be accessed [here](https://ieeexplore.ieee.org/abstract/document/9153753).
+To cite this work use:
+
+```
+D. Mouris, C. Gouert, N. Gupta and N. G. Tsoutsos,
+"Peak Your Frequency: Advanced Search of 3D CAD Files in the Fourier Domain,"
+in IEEE Access, vol. 8, pp. 141481-141496, 2020, doi: 10.1109/ACCESS.2020.3013284.
+```
+
+
+<!-- A Technical Report describing FFS is [available here](https://github.com/TrustworthyComputing/Fourier-Fingerprint-Search/tree/master/TechReport/TechReport.FourierFingerprintSearch.v1.0.pdf) -->
 
 ## Installation
 ```
