@@ -374,7 +374,7 @@ def print_lst_of_tuples(lst):
     for l in lst:
         match = l[0]
         accuracy = l[1]
-        print('\t' + match + '\t:\t' + str(round(accuracy, 3)))
+        print('\t' + match + '\t(similarity = ' + str(round(accuracy, 3)) + ')')
 
 
 def export_pngs(lst, show_png=False):
