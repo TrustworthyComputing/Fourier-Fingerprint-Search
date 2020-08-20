@@ -35,6 +35,9 @@ def main():
     if len(stl_files) < 2:
         disable_tqdm = True
 
+    if mode == 'learn':
+        print('Enrolling fingerprint(s) to the database...')
+
     # For each file
     for stl_file in tqdm(stl_files, ncols=100, bar_format='[{n_fmt}/{total_fmt}] {l_bar}{bar}|', disable=disable_tqdm):
         # generate fingerprint of the file

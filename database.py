@@ -142,5 +142,5 @@ def destroy_db(database_name):
     """
     Delete database_name database.
     """
-    print('Database destroyed')
+    print('Database destroyed.\n')
     plyvel.destroy_db(database_name)
