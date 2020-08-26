@@ -5,10 +5,10 @@
 ![alt text][overview]
 
 
-#### Cite this work!
+#### How to cite this work
 
-The publication describing the FFS framework can be accessed [here](https://ieeexplore.ieee.org/abstract/document/9153753).
-To cite this work use:
+The journal article describing the FFS framework can be accessed [here](https://ieeexplore.ieee.org/abstract/document/9153753).
+You can cite this article as follows:
 
 ```
 D. Mouris, C. Gouert, N. Gupta and N. G. Tsoutsos,
@@ -18,7 +18,7 @@ in IEEE Access, vol. 8, pp. 141481-141496, 2020, doi: 10.1109/ACCESS.2020.301328
 
 #### Watch our presentation on YouTube:
 
-[ <img src="./images/thumbnail.png" width="65%" height="65%"> ](https://www.youtube.com/watch?v=UrJCqG__Du0)
+[ <img align="center" src="./images/thumbnail.png" width="70%" height="70%"> ](https://www.youtube.com/watch?v=UrJCqG__Du0)
 
 
 ## Installation
