@@ -16,8 +16,10 @@ D. Mouris, C. Gouert, N. Gupta and N. G. Tsoutsos,
 in IEEE Access, vol. 8, pp. 141481-141496, 2020, doi: 10.1109/ACCESS.2020.3013284.
 ```
 
+#### Watch our presentation on YouTube:
 
-<!-- A Technical Report describing FFS is [available here](https://github.com/TrustworthyComputing/Fourier-Fingerprint-Search/tree/master/TechReport/TechReport.FourierFingerprintSearch.v1.0.pdf) -->
+[ <img src="./images/thumbnail.png" width="65%" height="65%"> ](https://www.youtube.com/watch?v=UrJCqG__Du0)
+
 
 ## Installation
 ```
