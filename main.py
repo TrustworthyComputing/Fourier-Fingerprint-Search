@@ -2,6 +2,7 @@ import helper as _hp
 import database as _db
 import fingerprint as _fp
 import sys
+import os.path
 import merkletools
 
 
@@ -31,9 +32,6 @@ def main():
               '\n\tMin number of signatures to match within a neighborhood :', str(_hp.MIN_SIGNATURES_TO_MATCH),
               '\n')
 
-    if mode == 'learn':
-        print('Enrolling fingerprint(s) to the database...')
-
     # For each file
     for stl_file in stl_files:
         # generate fingerprint of the file
@@ -54,8 +52,14 @@ def main():
         mt.make_tree()
         merkleRoot = mt.get_merkle_root()
 
-        print("root:", merkleRoot)
-        print('leaf_count', leaf_count)
+        signatures_filename = stl_file[:-4]+'.txt'
+        if not os.path.exists(signatures_filename):
+            with open(signatures_filename, 'w') as fp:
+                fp.write(merkleRoot + '\n')
+                fp.writelines("%s\n" % sig for sig in signatures)
+
+#         print('Merkle Root:', merkleRoot)
+#         print('Number of signatures: ', leaf_count)
 
         # Add fingerprint to database
         if mode == 'learn':
