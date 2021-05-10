@@ -2,7 +2,8 @@ import helper as _hp
 import database as _db
 import fingerprint as _fp
 import sys
-from tqdm import tqdm
+import merkletools
+
 
 def main():
     # parse arguments
@@ -19,35 +20,48 @@ def main():
 
     if _hp.VERBOSE:
         print('Generating fingerprint of', stl_files, 'with:',
-        '\n\tNumber of matches to return :', str(_hp.NUMBER_OF_MATCHES),
-        '\n\tFan value :', str(_hp.FAN_VALUE),
-        '\n\tNumber of slices :', str(_hp.NUM_OF_SLICES),
-        '\n\tNumber of peaks :', str(_hp.NUM_OF_PEAKS),
-        '\n\tGrid size :', str(_hp.GRID_SIZE),
-        '\n\tRotate flag :', str(_hp.ROTATE),
-        '\n\tStar rotate :', str(_hp.STAR_ROTATE),
-        '\n\tInterpolation flag :', str(_hp.INTERP),
-        '\n\tMin number of signatures to match within a neighborhood :', str(_hp.MIN_SIGNATURES_TO_MATCH),
-        '\n')
-
-    # Disable progress bar if only one
-    disable_tqdm = False
-    if len(stl_files) < 2:
-        disable_tqdm = True
+              '\n\tNumber of matches to return :', str(_hp.NUMBER_OF_MATCHES),
+              '\n\tFan value :', str(_hp.FAN_VALUE),
+              '\n\tNumber of slices :', str(_hp.NUM_OF_SLICES),
+              '\n\tNumber of peaks :', str(_hp.NUM_OF_PEAKS),
+              '\n\tGrid size :', str(_hp.GRID_SIZE),
+              '\n\tRotate flag :', str(_hp.ROTATE),
+              '\n\tStar rotate :', str(_hp.STAR_ROTATE),
+              '\n\tInterpolation flag :', str(_hp.INTERP),
+              '\n\tMin number of signatures to match within a neighborhood :', str(_hp.MIN_SIGNATURES_TO_MATCH),
+              '\n')
 
     if mode == 'learn':
         print('Enrolling fingerprint(s) to the database...')
 
     # For each file
-    for stl_file in tqdm(stl_files, ncols=100, bar_format='[{n_fmt}/{total_fmt}] {l_bar}{bar}|', disable=disable_tqdm):
+    for stl_file in stl_files:
         # generate fingerprint of the file
-        neighborhoods = _fp.fingerprint(stl_file, _hp.NUM_OF_SLICES, _hp.NUM_OF_PEAKS, _hp.FAN_VALUE, _hp.ROTATE, _hp.INTERP, _hp.STAR_ROTATE)
+        neighborhoods = _fp.fingerprint(stl_file, _hp.NUM_OF_SLICES, _hp.NUM_OF_PEAKS, _hp.FAN_VALUE, _hp.ROTATE,
+                                        _hp.INTERP, _hp.STAR_ROTATE)
+
+        # Iterate over all signatures of the file and sort them
+        signatures = []
+        for _, hashes_lst in neighborhoods.items():
+            for sig in hashes_lst:
+                signatures.append(sig.hex())
+        signatures.sort()
+
+        # Create Merkle Tree
+        mt = merkletools.MerkleTools()  # default is sha256
+        mt.add_leaf(signatures)
+        leaf_count = mt.get_leaf_count()
+        mt.make_tree()
+        merkleRoot = mt.get_merkle_root()
+
+        print("root:", merkleRoot)
+        print('leaf_count', leaf_count)
 
         # Add fingerprint to database
         if mode == 'learn':
             db.add_signatures(neighborhoods, stl_file)
         # Search in database for potential matches
-        else: # mode == 'search':
+        else:  # mode == 'search':
             anchor_matches, signatures_matches = db.search_signatures(neighborhoods)
 
             matches = None
@@ -68,6 +82,7 @@ def main():
 
     # Close the database
     db.close_db()
+
 
 if __name__ == "__main__":
     main()

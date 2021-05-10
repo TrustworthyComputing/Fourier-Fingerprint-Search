@@ -35,7 +35,7 @@ def stl_to_points_array(filename, interp):
             # interpolate
             if (interp):
                 prev_center = _hp.Point(['vertex', -100000.0, -100000.0, -100000.0])
-                while (1):
+                while 1:
                     center = _hp.tri_centroid([triangle[0], triangle[1], triangle[2]])
                     point_1 = _hp.tri_centroid([center, triangle[0], triangle[1]])
                     point_2 = _hp.tri_centroid([center, triangle[0], triangle[2]])
@@ -78,12 +78,14 @@ def detect_peaks(grid):
     neighborhood = generate_binary_structure(2, 2)
     # apply the local maximum filter; all pixel of maximal value in their neighborhood are set to 1
     local_max = (maximum_filter(grid, footprint=neighborhood) == grid)
-    # local_max is a mask that contains the peaks we are looking for, but also the background. In order to isolate the peaks we must remove the background from the mask.
-    # we create the mask of the background
+    # local_max is a mask that contains the peaks we are looking for, but also the background. In order to isolate
+    # the peaks we must remove the background from the mask. we create the mask of the background
     background = (grid == 0)
-    # a little technicality: we must erode the background in order to successfully subtract it form local_max, otherwise a line will appear along the background border (artifact of the local maximum filter)
+    # a little technicality: we must erode the background in order to successfully subtract it form local_max,
+    # otherwise a line will appear along the background border (artifact of the local maximum filter)
     eroded_background = binary_erosion(background, structure=neighborhood, border_value=1)
-    # we obtain the final mask, containing only peaks, by removing the background from the local_max mask (xor operation)
+    # we obtain the final mask, containing only peaks, by removing the background from the local_max mask (xor
+    # operation)
     detected_peaks = local_max ^ eroded_background
     return detected_peaks
 
@@ -192,7 +194,8 @@ def generate_hashes(peaks_list, axis, fan_value):
             target = peaks_list[j]
             dist_wrt_z = target[2] - anchor[2]
             hash_input = str(anchor[0]) + str(anchor[1]) + str(target[0]) + str(target[1]) + str(dist_wrt_z) + str(axis.value)
-            # hash_input = str(anchor[0]) + str(anchor[1]) + str(target[0]) + str(target[1]) + str(anchor[2]) + str(target[2]) + str(axis.value) # Absolute hash input. Partial matches would be limited.
+            # hash_input = str(anchor[0]) + str(anchor[1]) + str(target[0]) + str(target[1]) + str(anchor[2]) + str(
+            # target[2]) + str(axis.value) # Absolute hash input. Partial matches would be limited.
             h = _hp.sha1_hash(hash_input.encode())
             # append signature to the fingerprint of the file
             neighborhood[anchor_id].append(h)
@@ -219,7 +222,8 @@ def fingerprint(stl_file, num_of_slices, num_of_peaks_to_keep, fan_value, rotati
         if rotation:
             total_rotations = 4
         for rot90_times in range(total_rotations):
-            # parallel_slice_fft_and_hash( axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, neighborhood_dict, rot90_times, star_rotate )
+            # parallel_slice_fft_and_hash( axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value,
+            # neighborhood_dict, rot90_times, star_rotate )
             p = mp.Process(target=parallel_slice_fft_and_hash, args=(axis, scaled_points_array, num_of_peaks_to_keep, num_of_slices, fan_value, neighborhood_dict, rot90_times, star_rotate))
             processes.append(p)
             p.start()
