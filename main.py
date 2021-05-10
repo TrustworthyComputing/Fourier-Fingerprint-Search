@@ -8,7 +8,7 @@ import merkletools
 
 def main():
     # parse arguments
-    stl_files, mode, destroyDB = _hp.parseArgs()
+    stl_files, mode, destroyDB, outputFileName = _hp.parseArgs()
 
     # Delete database if the flag is set
     if destroyDB:
@@ -52,37 +52,35 @@ def main():
         mt.make_tree()
         merkleRoot = mt.get_merkle_root()
 
-        signatures_filename = stl_file[:-4]+'.txt'
-        if not os.path.exists(signatures_filename):
-            with open(signatures_filename, 'w') as fp:
-                fp.write(merkleRoot + '\n')
-                fp.writelines("%s\n" % sig for sig in signatures)
+        with open(outputFileName, 'w') as fp:
+            fp.write(merkleRoot + '\n')
+            fp.writelines("%s\n" % sig for sig in signatures)
 
 #         print('Merkle Root:', merkleRoot)
 #         print('Number of signatures: ', leaf_count)
 
-        # Add fingerprint to database
-        if mode == 'learn':
-            db.add_signatures(neighborhoods, stl_file)
-        # Search in database for potential matches
-        else:  # mode == 'search':
-            anchor_matches, signatures_matches = db.search_signatures(neighborhoods)
-
-            matches = None
-            if _hp.PRINT_NAIVE:
-                print('\nFiles matched with ' + stl_file + ' using the number of signatures : ', end='')
-                matches = signatures_matches
-                _hp.print_lst_of_tuples(matches)
-                print()
-
-            if _hp.NEIGHBORHOODS:
-                print('\nFiles matched with ' + stl_file + ' using the number of neighborhoods : ', end='')
-                matches = anchor_matches
-                _hp.print_lst_of_tuples(matches)
-                print()
-
-            if _hp.EXPORT_PNGS or _hp.SHOW_PNGS:
-                _hp.export_pngs([i[0] for i in matches], _hp.SHOW_PNGS)
+        # # Add fingerprint to database
+        # if mode == 'learn':
+        #     db.add_signatures(neighborhoods, stl_file)
+        # # Search in database for potential matches
+        # else:  # mode == 'search':
+        #     anchor_matches, signatures_matches = db.search_signatures(neighborhoods)
+        #
+        #     matches = None
+        #     if _hp.PRINT_NAIVE:
+        #         print('\nFiles matched with ' + stl_file + ' using the number of signatures : ', end='')
+        #         matches = signatures_matches
+        #         _hp.print_lst_of_tuples(matches)
+        #         print()
+        #
+        #     if _hp.NEIGHBORHOODS:
+        #         print('\nFiles matched with ' + stl_file + ' using the number of neighborhoods : ', end='')
+        #         matches = anchor_matches
+        #         _hp.print_lst_of_tuples(matches)
+        #         print()
+        #
+        #     if _hp.EXPORT_PNGS or _hp.SHOW_PNGS:
+        #         _hp.export_pngs([i[0] for i in matches], _hp.SHOW_PNGS)
 
     # Close the database
     db.close_db()

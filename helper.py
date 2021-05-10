@@ -233,7 +233,8 @@ def parseArgs():
     global DEBUG, VERBOSE, NUMBER_OF_MATCHES, FAN_VALUE, NUM_OF_SLICES, NUM_OF_PEAKS, GRID_SIZE, ROTATE, STAR_ROTATE, INTERP, PRINT_NAIVE, NEIGHBORHOODS, MIN_SIGNATURES_TO_MATCH, EXPORT_PNGS, SHOW_PNGS
     parser = argparse.ArgumentParser(description='STL compression')
     parser.add_argument('--stl',                help='Path to STL files (.stl) or directory.', type=file_or_dir_path, nargs='+', required=True)
-    parser.add_argument('--mode',               help='Learn or Search mode.', type=str.lower, choices=['learn', 'search'], required=True)
+    parser.add_argument('--mode',               help='Learn or Search mode.', type=str.lower, choices=['learn', 'search'], required=False)
+    parser.add_argument('--out',                help='File name to export the generated signatures.', required=False)
     parser.add_argument('--K',                  help='Max number of search results.', required=False)
     parser.add_argument('--N',                  help='Number of slices to divide 3D model.', required=False)
     parser.add_argument('--fanout',             help='Degree to which a fingerprint can be paired with its neighbors.', required=False)
@@ -288,7 +289,7 @@ def parseArgs():
         MIN_SIGNATURES_TO_MATCH = int(args.min_sig)
     if not NEIGHBORHOODS:
         PRINT_NAIVE = True
-    return stl_inputs, args.mode, args.destroy_db
+    return stl_inputs, args.mode, args.destroy_db, args.out
 
 
 def rot90(points_grid):
